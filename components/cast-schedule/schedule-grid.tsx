@@ -238,6 +238,11 @@ export function ScheduleGrid({
                         <div className="font-medium text-gray-900">
                           {entry.name}
                           <span className="ml-1 text-sm text-gray-500">({entry.age})</span>
+                          {entry.designationRank ? (
+                            <span className="ml-2 text-xs text-emerald-700">
+                              ランク: {entry.designationRank}
+                            </span>
+                          ) : null}
                         </div>
                         <div className="text-xs text-gray-500">{entry.nameKana}</div>
                       </div>
@@ -356,6 +361,11 @@ export function ScheduleGrid({
                       <div className="truncate font-medium text-gray-900">
                         {entry.name}
                         <span className="ml-1 text-sm text-gray-500">({entry.age})</span>
+                        {entry.designationRank ? (
+                          <span className="ml-2 text-xs text-emerald-700">
+                            ランク: {entry.designationRank}
+                          </span>
+                        ) : null}
                       </div>
                       <div className="mt-1 flex flex-wrap gap-1">
                         {entry.hasPhone && (

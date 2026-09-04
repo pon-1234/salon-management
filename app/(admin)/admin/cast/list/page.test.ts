@@ -15,7 +15,7 @@ const actionsSource = readFileSync(
 
 describe('CastListPage filters', () => {
   it('filters by employment lifecycle instead of mixing it with daily attendance', () => {
-    expect(actionsSource).toContain('<SelectItem value="all">すべて</SelectItem>')
+    expect(actionsSource).not.toContain('<SelectItem value="all">すべて</SelectItem>')
     expect(actionsSource).toContain('<SelectItem value="provisional">仮登録</SelectItem>')
     expect(actionsSource).toContain('<SelectItem value="active">在籍</SelectItem>')
     expect(actionsSource).toContain('<SelectItem value="retired">退店</SelectItem>')
@@ -23,9 +23,16 @@ describe('CastListPage filters', () => {
     expect(actionsSource).not.toContain('就業中(公開)')
     expect(actionsSource).not.toContain('onFilter: () => void')
     expect(pageSource).not.toContain('onFilter={handleFilter}')
-    expect(pageSource).toContain(
-      "employmentStatus === 'all' || cast.employmentStatus === employmentStatus"
+    expect(pageSource).toContain('cast.employmentStatus === employmentStatus')
+  })
+
+  it('defaults to 在籍 and shows document-completion warnings on each cast', () => {
+    const listSource = readFileSync(
+      join(process.cwd(), 'components', 'cast', 'cast-list-view.tsx'),
+      'utf8'
     )
+    expect(pageSource).toContain("useState('active')")
+    expect(listSource).toContain('getCastVerificationWarnings')
   })
 
   it('loads all cast pages before applying name and kana filters', () => {

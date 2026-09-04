@@ -102,6 +102,7 @@ import {
   QuickBookingVisitDetails,
   type ReceptionStaffOption,
 } from './quick-booking-panels'
+import { isVisibleReservationOption } from '@/lib/options/visibility'
 
 const paymentMethods = Object.values(PAYMENT_METHODS)
 const DEFAULT_MARKETING_CHANNELS = [...MARKETING_CHANNELS]
@@ -263,7 +264,7 @@ export function QuickBookingDialog({
 
   const normalizedOptions: NormalizedOption[] = useMemo(() => {
     if (optionPrices.length > 0) {
-      return optionPrices.map((option) => ({
+      return optionPrices.filter(isVisibleReservationOption).map((option) => ({
         id: option.id,
         name: option.name,
         price: option.price,
@@ -273,7 +274,7 @@ export function QuickBookingDialog({
       }))
     }
 
-    return options.map((option) => ({
+    return options.filter(isVisibleReservationOption).map((option) => ({
       id: option.id,
       name: option.name,
       price: option.price,

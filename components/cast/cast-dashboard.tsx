@@ -151,6 +151,7 @@ export function CastDashboard({ cast, onUpdate, onRequestEdit }: CastDashboardPr
             endTime: new Date(item.endTime),
             isAvailable: item.isAvailable,
             note: item.notes ?? undefined,
+            mediaText: item.mediaText ?? undefined,
             status: item.status ?? '出勤予定',
           }
         })
@@ -214,7 +215,7 @@ export function CastDashboard({ cast, onUpdate, onRequestEdit }: CastDashboardPr
 
       const time = record
         ? `${format(record.startTime, 'HH:mm')} - ${format(record.endTime, 'HH:mm')}`
-        : '休日'
+        : '未入力'
       const note = record?.note?.trim().length ? record.note.trim() : null
 
       return {
@@ -243,6 +244,7 @@ export function CastDashboard({ cast, onUpdate, onRequestEdit }: CastDashboardPr
         startTime: record.startTime ? format(record.startTime, 'HH:mm') : undefined,
         endTime: record.endTime ? format(record.endTime, 'HH:mm') : undefined,
         note: record.note,
+        mediaText: record.mediaText,
         isAvailable: record.isAvailable ?? true,
       }
     })
@@ -330,6 +332,24 @@ export function CastDashboard({ cast, onUpdate, onRequestEdit }: CastDashboardPr
                   <span className="break-all text-xs">{cast.loginEmail}</span>
                 </div>
               ) : null}
+              {cast.phone ? (
+                <div className="flex justify-between">
+                  <span className="text-gray-600">電話番号</span>
+                  <span>{cast.phone}</span>
+                </div>
+              ) : null}
+              {cast.blogWidget ? (
+                <div>
+                  <span className="text-gray-600">ブログウィジェット</span>
+                  <p className="mt-1 break-all text-xs">{cast.blogWidget}</p>
+                </div>
+              ) : null}
+              {cast.snsAccount ? (
+                <div className="flex justify-between">
+                  <span className="text-gray-600">SNSアカウント</span>
+                  <span>{cast.snsAccount}</span>
+                </div>
+              ) : null}
             </div>
           </CardContent>
         </Card>
@@ -359,12 +379,6 @@ export function CastDashboard({ cast, onUpdate, onRequestEdit }: CastDashboardPr
                 <span className="text-gray-600">特別指名料</span>
                 <span className="font-medium">
                   {cast.specialDesignationFee ? `${cast.specialDesignationFee}円` : '未設定'}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">本指名料</span>
-                <span className="font-medium">
-                  {cast.regularDesignationFee ? `${cast.regularDesignationFee}円` : '未設定'}
                 </span>
               </div>
               <div className="flex justify-between">

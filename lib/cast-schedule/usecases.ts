@@ -350,11 +350,11 @@ export class CastScheduleUseCases {
             startTime: startTimeStr,
             endTime: endTimeStr,
             note: daySchedule.notes ?? undefined,
+            mediaText: daySchedule.mediaText ?? undefined,
             isAvailable: daySchedule.isAvailable !== false,
           }
         } else {
-          // No schedule means holiday
-          weekSchedule[dateStr] = { type: '休日' }
+          weekSchedule[dateStr] = { type: '未入力' }
         }
       }
 
@@ -366,6 +366,8 @@ export class CastScheduleUseCases {
         image: cast.image,
         hasPhone: true,
         hasBusinessContact: true,
+        designationRank:
+          cast.specialDesignationFeeLabel ?? cast.specialDesignationFeeTier?.name ?? null,
         schedule: weekSchedule,
       }
     })

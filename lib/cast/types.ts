@@ -23,11 +23,27 @@ export interface Cast extends BaseEntity {
   regularTakeHomeBonusId?: string | null
   regularTakeHomeBonus?: number
   regularTakeHomeBonusLabel?: string | null
+  freeTakeHomeBonusId?: string | null
+  freeTakeHomeBonus?: number
+  freeTakeHomeBonusLabel?: string | null
+  recommendedTakeHomeBonusId?: string | null
+  recommendedTakeHomeBonus?: number
+  recommendedTakeHomeBonusLabel?: string | null
   regularDesignationFee: number | null
   panelDesignationRank: number
   regularDesignationRank: number
   workStatus: '出勤' | '未出勤' | '休日'
   employmentStatus?: 'provisional' | 'active' | 'retired'
+  phone?: string | null
+  birthDate?: string | Date | null
+  blogWidget?: string | null
+  snsAccount?: string | null
+  joinedAt?: string | Date | null
+  retiredAt?: string | Date | null
+  interviewer?: string | null
+  recruitmentMedia?: string | null
+  photoIdVerifiedAt?: string | Date | null
+  residenceCertificateVerifiedAt?: string | Date | null
   lineUserId?: string | null
   welfareExpenseRate?: number | null
   loginEmail?: string | null
@@ -111,6 +127,7 @@ export interface CastSchedule {
   endTime: Date
   isAvailable?: boolean
   note?: string
+  mediaText?: string
   status?: string
   bookings?: number // 予約数
 }

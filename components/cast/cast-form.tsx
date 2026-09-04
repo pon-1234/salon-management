@@ -12,7 +12,6 @@ import { Cast } from '@/lib/cast/types'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
 import {
   Select,
   SelectContent,
@@ -21,28 +20,13 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
-import { ArrowDown, ArrowUp, Plus, Loader2, Eye, EyeOff } from 'lucide-react'
-import { ImageUpload } from '@/components/ui/image-upload'
-import { SafeImage } from '@/components/ui/safe-image'
+import { Loader2, Eye, EyeOff } from 'lucide-react'
 import { FormSection } from '@/components/cast/form-section'
-import { cn } from '@/lib/utils'
-import { usePricing } from '@/hooks/use-pricing'
 import { resolveOptionId } from '@/lib/options/data'
 import { useUnsavedChangesWarning } from '@/hooks/use-unsaved-changes-warning'
-import { moveGalleryImage } from '@/lib/cast/gallery-order'
 import { getDesignationFees } from '@/lib/designation/data'
 import type { DesignationFee } from '@/lib/designation/types'
 import { resolveDesignationKind } from '@/lib/designation/kind'
-
-type OptionChoice = {
-  id: string
-  name: string
-  price: number
-  description?: string
-  note?: string | null
-  storeShare?: number | null
-  castShare?: number | null
-}
 
 const castFormSchema = z
   .object({
@@ -116,11 +100,26 @@ const buildInitialFormState = (cast?: Cast | null) => ({
   specialDesignationFeeId: cast?.specialDesignationFeeId ?? '',
   panelTakeHomeBonusId: cast?.panelTakeHomeBonusId ?? '',
   regularTakeHomeBonusId: cast?.regularTakeHomeBonusId ?? '',
-  regularDesignationFee: cast?.regularDesignationFee ?? '',
+  freeTakeHomeBonusId: cast?.freeTakeHomeBonusId ?? '',
+  recommendedTakeHomeBonusId: cast?.recommendedTakeHomeBonusId ?? '',
   panelDesignationRank: cast?.panelDesignationRank ?? '',
   regularDesignationRank: cast?.regularDesignationRank ?? '',
   workStatus: cast?.workStatus || '出勤',
-  employmentStatus: cast?.employmentStatus || 'provisional',
+  employmentStatus: cast?.employmentStatus || 'active',
+  phone: cast?.phone ?? '',
+  birthDate: cast?.birthDate ? new Date(cast.birthDate).toISOString().slice(0, 10) : '',
+  blogWidget: cast?.blogWidget ?? '',
+  snsAccount: cast?.snsAccount ?? '',
+  joinedAt: cast?.joinedAt ? new Date(cast.joinedAt).toISOString().slice(0, 10) : '',
+  retiredAt: cast?.retiredAt ? new Date(cast.retiredAt).toISOString().slice(0, 10) : '',
+  interviewer: cast?.interviewer ?? '',
+  recruitmentMedia: cast?.recruitmentMedia ?? '',
+  photoIdVerifiedAt: cast?.photoIdVerifiedAt
+    ? new Date(cast.photoIdVerifiedAt).toISOString().slice(0, 10)
+    : '',
+  residenceCertificateVerifiedAt: cast?.residenceCertificateVerifiedAt
+    ? new Date(cast.residenceCertificateVerifiedAt).toISOString().slice(0, 10)
+    : '',
   availableOptions: cast?.availableOptions ? [...cast.availableOptions] : [],
   availableOptionVisibility: (() => {
     const visibilityMap: Record<string, 'public' | 'internal'> = {}
@@ -144,15 +143,6 @@ const buildInitialFormState = (cast?: Cast | null) => ({
   loginPasswordConfirm: '',
 })
 
-const PROFILE_TYPES = [
-  'カワイイ系',
-  'キレイ系',
-  'セクシー系',
-  'お姉さん系',
-  'モデル系',
-  'おっとり系',
-]
-
 const EMPLOYMENT_STATUS_OPTIONS: Array<{
   value: 'provisional' | 'active' | 'retired'
   label: string
@@ -161,93 +151,6 @@ const EMPLOYMENT_STATUS_OPTIONS: Array<{
   { value: 'active', label: '在籍' },
   { value: 'retired', label: '退店' },
 ]
-
-const OptionPill = ({
-  label,
-  caption,
-  description,
-  note,
-  selected,
-  onToggle,
-  visibility,
-  onVisibilityChange,
-}: {
-  label: string
-  caption?: string
-  description?: string
-  note?: string | null
-  selected: boolean
-  onToggle: () => void
-  visibility?: 'public' | 'internal'
-  onVisibilityChange?: (value: 'public' | 'internal') => void
-}) => (
-  <div
-    className={cn(
-      'w-full rounded-lg border px-4 py-3 text-left text-sm transition',
-      selected
-        ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
-        : 'border-border hover:border-emerald-400 hover:bg-emerald-50'
-    )}
-  >
-    <button type="button" onClick={onToggle} className="w-full text-left">
-      <span className="block font-medium">{label}</span>
-      {note ? (
-        <span className="mt-1 inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-xs text-emerald-700">
-          {note}
-        </span>
-      ) : null}
-      {description ? (
-        <span className="mt-1 block text-xs text-muted-foreground">{description}</span>
-      ) : null}
-      {caption ? <span className="mt-1 block text-xs text-muted-foreground">{caption}</span> : null}
-    </button>
-    {selected && onVisibilityChange ? (
-      <div className="mt-2 flex items-center gap-2 text-xs">
-        <span className="text-muted-foreground">公開設定</span>
-        <Select
-          value={visibility ?? 'public'}
-          onValueChange={(value) => onVisibilityChange(value as 'public' | 'internal')}
-        >
-          <SelectTrigger className="h-8 w-[140px] text-xs">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="public">公開</SelectItem>
-            <SelectItem value="internal">準非公開</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-    ) : null}
-  </div>
-)
-
-const DEFAULT_STORE_RATIO = 0.6
-
-function calculateRevenueSplit(
-  price: number,
-  storeShare?: number | null,
-  castShare?: number | null
-) {
-  const safePrice = Math.max(0, price || 0)
-  let store = typeof storeShare === 'number' ? Math.max(0, storeShare) : Number.NaN
-  let cast = typeof castShare === 'number' ? Math.max(0, castShare) : Number.NaN
-
-  if (Number.isNaN(store) && Number.isNaN(cast)) {
-    store = Math.round(safePrice * DEFAULT_STORE_RATIO)
-    cast = Math.max(safePrice - store, 0)
-  } else if (Number.isNaN(store)) {
-    cast = Math.min(safePrice, cast)
-    store = Math.max(safePrice - cast, 0)
-  } else if (Number.isNaN(cast)) {
-    store = Math.min(safePrice, store)
-    cast = Math.max(safePrice - store, 0)
-  } else {
-    store = Math.min(store, safePrice)
-    cast = Math.max(safePrice - store, 0)
-  }
-
-  return { storeShare: store, castShare: cast }
-}
 
 export function CastForm({
   storeId,
@@ -261,13 +164,14 @@ export function CastForm({
   const initialFormData = useMemo(() => buildInitialFormState(cast), [cast])
   const [showLoginPassword, setShowLoginPassword] = useState(false)
   const [showLoginPasswordConfirm, setShowLoginPasswordConfirm] = useState(false)
+  const [interviewerOptions, setInterviewerOptions] = useState<string[]>([])
+  const [recruitmentMediaOptions, setRecruitmentMediaOptions] = useState<string[]>([])
   const {
     setError,
     clearErrors,
     formState: { errors },
   } = useForm<CastFormValidationValues>()
   const fieldId = (suffix: string) => `cast-${suffix}`
-  const { optionPrices, options: legacyOptions, loading: optionsLoading } = usePricing(storeId)
   useEffect(() => {
     let active = true
     getDesignationFees({ storeId })
@@ -275,6 +179,41 @@ export function CastForm({
         if (active) setDesignationFees(fees.filter((fee) => fee.isActive))
       })
       .catch((error) => console.error('Failed to load designation fee master:', error))
+    return () => {
+      active = false
+    }
+  }, [storeId])
+
+  useEffect(() => {
+    let active = true
+    const storeQuery = `storeId=${encodeURIComponent(storeId)}`
+    void Promise.all([
+      fetch(`/api/admin?${storeQuery}`, { credentials: 'include', cache: 'no-store' }),
+      fetch(`/api/settings/store?${storeQuery}`, { credentials: 'include', cache: 'no-store' }),
+    ])
+      .then(async ([adminsResponse, settingsResponse]) => {
+        const adminsPayload = adminsResponse.ok ? await adminsResponse.json() : []
+        const settingsPayload = settingsResponse.ok ? await settingsResponse.json() : {}
+        const admins = Array.isArray(adminsPayload) ? adminsPayload : (adminsPayload?.data ?? [])
+        const settings = settingsPayload?.data ?? settingsPayload
+        if (!active) return
+        setInterviewerOptions(
+          Array.from(
+            new Set(
+              admins
+                .map((admin: { name?: string; email?: string }) => admin.name || admin.email)
+                .filter(Boolean)
+            )
+          ) as string[]
+        )
+        setRecruitmentMediaOptions(
+          (Array.isArray(settings.mediaAccounts) ? settings.mediaAccounts : [])
+            .filter((account: { category?: string }) => account.category === 'recruitment')
+            .map((account: { name?: string }) => account.name)
+            .filter(Boolean)
+        )
+      })
+      .catch((error) => console.error('Failed to load cast form choices:', error))
     return () => {
       active = false
     }
@@ -299,16 +238,22 @@ export function CastForm({
     }
     return options.sort((left, right) => left.sortOrder - right.sortOrder)
   }, [designationFees, formData.specialDesignationFee])
-  const panelTakeHomeOptions = useMemo(
-    () =>
-      designationFees.filter(
-        (fee) => ['panel', 'free'].includes(resolveDesignationKind(fee)) && fee.price > 0
-      ),
-    [designationFees]
-  )
   const regularTakeHomeOptions = useMemo(
     () =>
       designationFees.filter((fee) => resolveDesignationKind(fee) === 'repeat' && fee.price > 0),
+    [designationFees]
+  )
+  const freeTakeHomeOptions = useMemo(
+    () => designationFees.filter((fee) => resolveDesignationKind(fee) === 'free' && fee.price > 0),
+    [designationFees]
+  )
+  const panelTakeHomeOptions = useMemo(
+    () => designationFees.filter((fee) => resolveDesignationKind(fee) === 'panel' && fee.price > 0),
+    [designationFees]
+  )
+  const recommendedTakeHomeOptions = useMemo(
+    () =>
+      designationFees.filter((fee) => resolveDesignationKind(fee) === 'recommend' && fee.price > 0),
     [designationFees]
   )
   const isDirty = useMemo(
@@ -317,67 +262,9 @@ export function CastForm({
   )
   useUnsavedChangesWarning(isDirty && !isSubmitting)
 
-  const optionCatalog: OptionChoice[] = useMemo(() => {
-    if (optionPrices.length > 0) {
-      return optionPrices
-        .filter((option) => option.isActive !== false)
-        .sort((a, b) => a.displayOrder - b.displayOrder)
-        .map((option) => ({
-          id: option.id,
-          name: option.name,
-          price: option.price,
-          description: option.description ?? '',
-          note: option.note ?? null,
-          storeShare: option.storeShare ?? null,
-          castShare: option.castShare ?? null,
-        }))
-    }
-
-    if (legacyOptions.length > 0) {
-      return legacyOptions.map((option) => ({
-        id: option.id,
-        name: option.name,
-        price: option.price,
-        description: option.description ?? '',
-        note: option.note ?? null,
-        storeShare: option.storeShare ?? null,
-        castShare: option.castShare ?? null,
-      }))
-    }
-
-    return []
-  }, [optionPrices, legacyOptions])
-
   useEffect(() => {
     setFormData(buildInitialFormState(cast))
   }, [cast])
-
-  useEffect(() => {
-    setFormData((prev) => {
-      if (prev.availableOptions.length === 0) {
-        return prev
-      }
-
-      const normalized = prev.availableOptions.map((id) => resolveOptionId(id))
-      const hasChanged = normalized.some((id, index) => id !== prev.availableOptions[index])
-
-      if (!hasChanged) {
-        return prev
-      }
-
-      const normalizedVisibility: Record<string, 'public' | 'internal'> = {}
-      Object.entries(prev.availableOptionVisibility ?? {}).forEach(([key, value]) => {
-        const resolved = resolveOptionId(key)
-        normalizedVisibility[resolved] = value === 'internal' ? 'internal' : 'public'
-      })
-
-      return {
-        ...prev,
-        availableOptions: Array.from(new Set(normalized)),
-        availableOptionVisibility: normalizedVisibility,
-      }
-    })
-  }, [optionCatalog])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -457,8 +344,20 @@ export function CastForm({
       specialDesignationFeeId: formData.specialDesignationFeeId || null,
       panelTakeHomeBonusId: formData.panelTakeHomeBonusId || null,
       regularTakeHomeBonusId: formData.regularTakeHomeBonusId || null,
+      freeTakeHomeBonusId: formData.freeTakeHomeBonusId || null,
+      recommendedTakeHomeBonusId: formData.recommendedTakeHomeBonusId || null,
       availableOptions: formData.availableOptions,
       availableOptionSettings: normalizedOptionSettings,
+      phone: formData.phone.trim() || null,
+      birthDate: formData.birthDate || null,
+      blogWidget: formData.blogWidget.trim() || null,
+      snsAccount: formData.snsAccount.trim() || null,
+      joinedAt: formData.joinedAt || null,
+      retiredAt: formData.retiredAt || null,
+      interviewer: formData.interviewer || null,
+      recruitmentMedia: formData.recruitmentMedia || null,
+      photoIdVerifiedAt: formData.photoIdVerifiedAt || null,
+      residenceCertificateVerifiedAt: formData.residenceCertificateVerifiedAt || null,
     }
 
     payload.loginEmail = loginEmail ? loginEmail : null
@@ -492,9 +391,6 @@ export function CastForm({
     const specialFee = toOptionalMoney(formData.specialDesignationFee as number | string | null)
     if (specialFee !== undefined) payload.specialDesignationFee = specialFee
 
-    const regularFee = toOptionalMoney(formData.regularDesignationFee as number | string | null)
-    if (regularFee !== undefined) payload.regularDesignationFee = regularFee
-
     const welfareRate = toOptionalNumber(formData.welfareExpenseRate)
     if (welfareRate !== undefined) payload.welfareExpenseRate = welfareRate
 
@@ -516,86 +412,6 @@ export function CastForm({
     setFormData((prev) => ({ ...prev, [name]: checked }))
   }
 
-  const handleOptionChange = (optionId: string, checked: boolean) => {
-    setFormData((prev) => {
-      const filtered = prev.availableOptions.filter((id) => {
-        const resolved = resolveOptionId(id)
-        return resolved !== optionId && id !== optionId
-      })
-
-      if (checked) {
-        filtered.push(optionId)
-        return {
-          ...prev,
-          availableOptions: Array.from(new Set(filtered)),
-          availableOptionVisibility: {
-            ...prev.availableOptionVisibility,
-            [optionId]: prev.availableOptionVisibility?.[optionId] ?? 'public',
-          },
-        }
-      }
-      const nextVisibility = { ...(prev.availableOptionVisibility ?? {}) }
-      delete nextVisibility[optionId]
-      return {
-        ...prev,
-        availableOptions: Array.from(new Set(filtered)),
-        availableOptionVisibility: nextVisibility,
-      }
-    })
-  }
-
-  const handleImageChange = (index: number, url: string) => {
-    setFormData((prev) => {
-      const trimmedUrl = url.trim()
-      const newImages = [...prev.images]
-      newImages[index] = trimmedUrl
-
-      const currentMain = prev.image?.trim() ?? ''
-      const isDefaultMain =
-        !currentMain || currentMain.includes('placeholder') || currentMain === prev.images[index]
-      const nextMain = isDefaultMain && trimmedUrl ? trimmedUrl : currentMain
-
-      return {
-        ...prev,
-        images: newImages,
-        image: nextMain ?? '',
-      }
-    })
-  }
-
-  const addImage = () => {
-    setFormData((prev) => {
-      if (prev.images.length >= 10) return prev
-      return {
-        ...prev,
-        images: [...prev.images, ''],
-      }
-    })
-  }
-
-  const removeImage = (index: number) => {
-    setFormData((prev) => {
-      const removedValue = prev.images[index]?.trim()
-      const newImages = prev.images.filter((_, i) => i !== index)
-      const nextMain =
-        prev.image && removedValue && prev.image.trim() === removedValue
-          ? (newImages.find((img) => (img ?? '').trim().length > 0) ?? '')
-          : prev.image
-      return {
-        ...prev,
-        images: newImages,
-        image: nextMain ?? '',
-      }
-    })
-  }
-
-  const moveImage = (index: number, offset: -1 | 1) => {
-    setFormData((prev) => ({
-      ...prev,
-      images: moveGalleryImage(prev.images, index, offset),
-    }))
-  }
-
   const handleCancel = () => {
     if (onCancel) {
       onCancel()
@@ -608,10 +424,7 @@ export function CastForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6" autoComplete="off" noValidate>
-      <FormSection
-        title="基本プロフィール"
-        description="公開プロフィールで表示されるキャストの基礎情報を整えます。"
-      >
+      <FormSection title="基本情報" description="在籍管理と本人確認に必要な情報です。">
         <div className="grid gap-6 md:grid-cols-2">
           <div className="space-y-2">
             <Label htmlFor={fieldId('name')}>
@@ -668,114 +481,177 @@ export function CastForm({
             </p>
           </div>
           <div className="space-y-2">
-            <Label htmlFor={fieldId('age')}>年齢</Label>
+            <Label htmlFor={fieldId('phone')}>電話番号</Label>
             <Input
-              id={fieldId('age')}
-              name="age"
-              type="number"
-              min={18}
-              value={formData.age}
+              id={fieldId('phone')}
+              name="phone"
+              type="tel"
+              value={formData.phone}
               onChange={handleInputChange}
-              placeholder="25"
-              autoComplete="off"
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor={fieldId('height')}>身長 (cm)</Label>
+            <Label>生年月日</Label>
+            <div className="grid grid-cols-3 gap-2">
+              {(['year', 'month', 'day'] as const).map((part) => {
+                const [year = '', month = '', day = ''] = formData.birthDate.split('-')
+                const value = part === 'year' ? year : part === 'month' ? month : day
+                const values =
+                  part === 'year'
+                    ? Array.from({ length: 83 }, (_, index) =>
+                        String(new Date().getFullYear() - 18 - index)
+                      )
+                    : Array.from({ length: part === 'month' ? 12 : 31 }, (_, index) =>
+                        String(index + 1).padStart(2, '0')
+                      )
+                return (
+                  <Select
+                    key={part}
+                    value={value}
+                    onValueChange={(nextValue) => {
+                      const next = { year, month, day, [part]: nextValue }
+                      setFormData((previous) => ({
+                        ...previous,
+                        birthDate:
+                          next.year && next.month && next.day
+                            ? `${next.year}-${next.month}-${next.day}`
+                            : '',
+                      }))
+                    }}
+                  >
+                    <SelectTrigger
+                      aria-label={`生年月日${part === 'year' ? '年' : part === 'month' ? '月' : '日'}`}
+                    >
+                      <SelectValue
+                        placeholder={part === 'year' ? '年' : part === 'month' ? '月' : '日'}
+                      />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {values.map((item) => (
+                        <SelectItem key={item} value={item}>
+                          {item}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )
+              })}
+            </div>
+            {formData.birthDate ? (
+              <p className="text-xs text-muted-foreground">
+                年齢:{' '}
+                {Math.max(0, new Date().getFullYear() - Number(formData.birthDate.slice(0, 4)))}歳
+              </p>
+            ) : null}
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor={fieldId('blogWidget')}>ブログウィジェット</Label>
             <Input
-              id={fieldId('height')}
-              name="height"
-              type="number"
-              min={100}
-              value={formData.height}
+              id={fieldId('blogWidget')}
+              name="blogWidget"
+              value={formData.blogWidget}
               onChange={handleInputChange}
-              placeholder="168"
-              autoComplete="off"
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor={fieldId('bust')}>バスト</Label>
+            <Label htmlFor={fieldId('snsAccount')}>SNSアカウント</Label>
             <Input
-              id={fieldId('bust')}
-              name="bust"
-              value={formData.bust}
+              id={fieldId('snsAccount')}
+              name="snsAccount"
+              value={formData.snsAccount}
               onChange={handleInputChange}
-              placeholder="84"
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor={fieldId('waist')}>ウエスト (cm)</Label>
+            <Label htmlFor={fieldId('joinedAt')}>入店日</Label>
             <Input
-              id={fieldId('waist')}
-              name="waist"
-              type="number"
-              value={formData.waist}
+              id={fieldId('joinedAt')}
+              name="joinedAt"
+              type="date"
+              value={formData.joinedAt}
               onChange={handleInputChange}
-              placeholder="60"
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor={fieldId('hip')}>ヒップ (cm)</Label>
+            <Label htmlFor={fieldId('retiredAt')}>退店日</Label>
             <Input
-              id={fieldId('hip')}
-              name="hip"
-              type="number"
-              value={formData.hip}
+              id={fieldId('retiredAt')}
+              name="retiredAt"
+              type="date"
+              value={formData.retiredAt}
               onChange={handleInputChange}
-              placeholder="88"
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor={fieldId('type')}>タイプ</Label>
+            <Label htmlFor={fieldId('interviewer')}>面接担当者</Label>
             <Select
-              value={formData.type}
-              onValueChange={(value) => setFormData((prev) => ({ ...prev, type: value }))}
+              value={formData.interviewer || 'none'}
+              onValueChange={(value) =>
+                setFormData((previous) => ({
+                  ...previous,
+                  interviewer: value === 'none' ? '' : value,
+                }))
+              }
             >
-              <SelectTrigger id={fieldId('type')}>
-                <SelectValue placeholder="スタイルを選択" />
+              <SelectTrigger id={fieldId('interviewer')}>
+                <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {PROFILE_TYPES.map((item) => (
-                  <SelectItem key={item} value={item}>
-                    {item}
+                <SelectItem value="none">未設定</SelectItem>
+                {interviewerOptions.map((name) => (
+                  <SelectItem key={name} value={name}>
+                    {name}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor={fieldId('description')}>紹介文</Label>
-          <Textarea
-            id={fieldId('description')}
-            name="description"
-            value={formData.description}
-            onChange={handleInputChange}
-            placeholder="キャストの雰囲気や得意なサービスなどを記載します。"
-            className="min-h-[120px]"
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor={fieldId('mediaComment')}>媒体掲載用コメント</Label>
-          <Textarea
-            id={fieldId('mediaComment')}
-            name="mediaComment"
-            value={formData.mediaComment}
-            onChange={handleInputChange}
-            placeholder="ヘブン・便利など外部媒体向けのコメント。店舗内部の備考とは別に保存されます。"
-            className="min-h-[120px]"
-          />
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              name="mediaSyncExcluded"
-              checked={formData.mediaSyncExcluded}
-              onChange={(event) =>
-                setFormData((prev) => ({ ...prev, mediaSyncExcluded: event.target.checked }))
+          <div className="space-y-2">
+            <Label htmlFor={fieldId('recruitmentMedia')}>求人媒体</Label>
+            <Select
+              value={formData.recruitmentMedia || 'none'}
+              onValueChange={(value) =>
+                setFormData((previous) => ({
+                  ...previous,
+                  recruitmentMedia: value === 'none' ? '' : value,
+                }))
               }
+            >
+              <SelectTrigger id={fieldId('recruitmentMedia')}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">未設定</SelectItem>
+                {recruitmentMediaOptions.map((name) => (
+                  <SelectItem key={name} value={name}>
+                    {name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor={fieldId('photoIdVerifiedAt')}>写真付き身分証確認日</Label>
+            <Input
+              id={fieldId('photoIdVerifiedAt')}
+              name="photoIdVerifiedAt"
+              type="date"
+              value={formData.photoIdVerifiedAt}
+              onChange={handleInputChange}
             />
-            外部サービスからのコメント同期対象外にする
-          </label>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor={fieldId('residenceCertificateVerifiedAt')}>
+              本籍地入り住民票確認日
+            </Label>
+            <Input
+              id={fieldId('residenceCertificateVerifiedAt')}
+              name="residenceCertificateVerifiedAt"
+              type="date"
+              value={formData.residenceCertificateVerifiedAt}
+              onChange={handleInputChange}
+            />
+          </div>
         </div>
       </FormSection>
 
@@ -983,21 +859,31 @@ export function CastForm({
             </p>
           </div>
           <div className="space-y-2">
-            <Label htmlFor={fieldId('regularDesignationFee')}>本指名料 (円)</Label>
-            <Input
-              id={fieldId('regularDesignationFee')}
-              name="regularDesignationFee"
-              type="number"
-              min={0}
-              value={formData.regularDesignationFee}
-              onChange={handleInputChange}
-              placeholder="4000"
-            />
+            <Label htmlFor={fieldId('freeTakeHomeBonus')}>フリー指名手取UP</Label>
+            <Select
+              value={formData.freeTakeHomeBonusId || 'none'}
+              onValueChange={(value) =>
+                setFormData((previous) => ({
+                  ...previous,
+                  freeTakeHomeBonusId: value === 'none' ? '' : value,
+                }))
+              }
+            >
+              <SelectTrigger id={fieldId('freeTakeHomeBonus')}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">なし（0円）</SelectItem>
+                {freeTakeHomeOptions.map((fee) => (
+                  <SelectItem key={fee.id} value={fee.id}>
+                    {fee.name}（{fee.price.toLocaleString()}円）
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div className="space-y-2">
-            <Label htmlFor={fieldId('panelTakeHomeBonus')}>
-              パネル・おすすめ・フリー指名手取UP
-            </Label>
+            <Label htmlFor={fieldId('panelTakeHomeBonus')}>パネル指名手取UP</Label>
             <Select
               value={formData.panelTakeHomeBonusId || 'none'}
               onValueChange={(value) =>
@@ -1013,6 +899,30 @@ export function CastForm({
               <SelectContent>
                 <SelectItem value="none">なし（0円）</SelectItem>
                 {panelTakeHomeOptions.map((fee) => (
+                  <SelectItem key={fee.id} value={fee.id}>
+                    {fee.name}（{fee.price.toLocaleString()}円）
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor={fieldId('recommendedTakeHomeBonus')}>おすすめP指名手取UP</Label>
+            <Select
+              value={formData.recommendedTakeHomeBonusId || 'none'}
+              onValueChange={(value) =>
+                setFormData((previous) => ({
+                  ...previous,
+                  recommendedTakeHomeBonusId: value === 'none' ? '' : value,
+                }))
+              }
+            >
+              <SelectTrigger id={fieldId('recommendedTakeHomeBonus')}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">なし（0円）</SelectItem>
+                {recommendedTakeHomeOptions.map((fee) => (
                   <SelectItem key={fee.id} value={fee.id}>
                     {fee.name}（{fee.price.toLocaleString()}円）
                   </SelectItem>
@@ -1045,136 +955,6 @@ export function CastForm({
             </Select>
           </div>
         </div>
-      </FormSection>
-
-      <FormSection
-        title="メイン画像・ギャラリー"
-        description="アイキャッチ画像とギャラリー画像を設定します。3枚以上の登録がおすすめです。"
-      >
-        <div className="space-y-2">
-          <Label htmlFor={fieldId('image')}>メイン画像URL</Label>
-          <Input
-            id={fieldId('image')}
-            name="image"
-            value={formData.image}
-            onChange={handleInputChange}
-            placeholder="https://example.com/main.jpg"
-            autoComplete="off"
-          />
-          {formData.image ? (
-            <div className="flex items-center gap-4 rounded-lg border bg-muted/40 p-4">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <SafeImage
-                src={formData.image}
-                alt="メイン画像プレビュー"
-                className="h-20 w-16 flex-shrink-0 rounded object-cover"
-              />
-              <div className="min-w-0">
-                <p className="text-sm font-medium text-muted-foreground">現在のメイン画像</p>
-                <p className="truncate text-xs text-muted-foreground">{formData.image}</p>
-              </div>
-            </div>
-          ) : null}
-        </div>
-        <div className={cn('grid gap-4', formData.images.length > 0 ? 'md:grid-cols-2' : '')}>
-          {formData.images.length === 0 && (
-            <p className="rounded-lg border border-dashed bg-muted/30 p-6 text-center text-sm text-muted-foreground">
-              画像を追加するとここにプレビューが表示されます。
-            </p>
-          )}
-          {formData.images.map((image, index) => (
-            <div key={index} className="space-y-2">
-              <ImageUpload
-                value={image}
-                onChange={(url) => handleImageChange(index, url)}
-                onRemove={() => removeImage(index)}
-                index={index}
-              />
-              <div className="flex justify-end gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  aria-label={`画像${index + 1}を前へ`}
-                  disabled={index === 0}
-                  onClick={() => moveImage(index, -1)}
-                >
-                  <ArrowUp className="h-4 w-4" />
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  aria-label={`画像${index + 1}を後ろへ`}
-                  disabled={index === formData.images.length - 1}
-                  onClick={() => moveImage(index, 1)}
-                >
-                  <ArrowDown className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          ))}
-        </div>
-        {formData.images.length < 10 && (
-          <Button type="button" variant="outline" onClick={addImage} className="w-full sm:w-fit">
-            <Plus className="mr-2 h-4 w-4" />
-            画像を追加 ({formData.images.length}/10)
-          </Button>
-        )}
-      </FormSection>
-
-      <FormSection
-        title="提供可能オプション"
-        description="実施可能なオプションを選択し、公開/準非公開を設定できます。"
-      >
-        {optionsLoading && optionCatalog.length === 0 ? (
-          <p className="text-sm text-muted-foreground">オプション情報を読み込み中です…</p>
-        ) : (
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {optionCatalog.map((option) => {
-              const selected = formData.availableOptions.some((value) => {
-                const resolved = resolveOptionId(value)
-                return value === option.id || resolved === option.id
-              })
-              const visibility = formData.availableOptionVisibility?.[option.id] ?? 'public'
-              const { storeShare, castShare } = calculateRevenueSplit(
-                option.price,
-                option.storeShare,
-                option.castShare
-              )
-
-              const caption =
-                option.price === 0
-                  ? `無料 / 店舗 ${storeShare.toLocaleString()}円 / キャスト ${castShare.toLocaleString()}円`
-                  : `料金 ¥${option.price.toLocaleString()} / 店舗 ${storeShare.toLocaleString()}円 / キャスト ${castShare.toLocaleString()}円`
-
-              return (
-                <OptionPill
-                  key={option.id}
-                  label={option.name}
-                  description={option.description}
-                  note={option.note}
-                  caption={caption}
-                  selected={selected}
-                  onToggle={() => handleOptionChange(option.id, !selected)}
-                  visibility={visibility}
-                  onVisibilityChange={(value) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      availableOptionVisibility: {
-                        ...(prev.availableOptionVisibility ?? {}),
-                        [option.id]: value,
-                      },
-                    }))
-                  }
-                />
-              )
-            })}
-          </div>
-        )}
-        {optionCatalog.length === 0 && !optionsLoading ? (
-          <p className="text-sm text-muted-foreground">登録済みのオプションがありません</p>
-        ) : null}
       </FormSection>
 
       <div className="flex flex-col gap-3 border-t border-border pt-4 sm:flex-row sm:justify-end">

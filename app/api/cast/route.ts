@@ -34,13 +34,13 @@ const imageUrlSchema = z
 const castSchema = z.object({
   name: z.string().min(1),
   nameKana: z.string().min(1).optional(),
-  age: z.coerce.number().int().min(18).max(100),
-  height: z.coerce.number().int().min(100).max(250),
-  bust: z.string(),
-  waist: z.coerce.number().int().min(40).max(150),
-  hip: z.coerce.number().int().min(40).max(150),
-  type: z.string(),
-  image: imageUrlSchema,
+  age: z.coerce.number().int().min(18).max(100).optional().default(18),
+  height: z.coerce.number().int().min(100).max(250).optional().default(150),
+  bust: z.string().optional().default(''),
+  waist: z.coerce.number().int().min(40).max(150).optional().default(50),
+  hip: z.coerce.number().int().min(40).max(150).optional().default(50),
+  type: z.string().optional().default('未設定'),
+  image: imageUrlSchema.optional().default('/images/cast-placeholder.svg'),
   images: z.array(imageUrlSchema).optional().default([]),
   description: z.string().optional().default(''),
   mediaComment: z.string().optional(),
@@ -62,12 +62,24 @@ const castSchema = z.object({
   specialDesignationFee: z.union([z.null(), z.coerce.number().int().min(0)]).optional(),
   specialDesignationFeeId: z.union([z.null(), z.string().min(1)]).optional(),
   panelTakeHomeBonusId: z.union([z.null(), z.string().min(1)]).optional(),
+  freeTakeHomeBonusId: z.union([z.null(), z.string().min(1)]).optional(),
+  recommendedTakeHomeBonusId: z.union([z.null(), z.string().min(1)]).optional(),
   regularTakeHomeBonusId: z.union([z.null(), z.string().min(1)]).optional(),
   regularDesignationFee: z.union([z.null(), z.coerce.number().int().min(0)]).optional(),
   panelDesignationRank: z.coerce.number().int().min(0).optional().default(0),
   regularDesignationRank: z.coerce.number().int().min(0).optional().default(0),
   workStatus: z.string().optional().default('出勤'),
-  employmentStatus: z.enum(['provisional', 'active', 'retired']).optional().default('provisional'),
+  employmentStatus: z.enum(['provisional', 'active', 'retired']).optional().default('active'),
+  phone: z.string().trim().max(30).nullable().optional(),
+  birthDate: z.coerce.date().nullable().optional(),
+  blogWidget: z.string().max(5000).nullable().optional(),
+  snsAccount: z.string().max(500).nullable().optional(),
+  joinedAt: z.coerce.date().nullable().optional(),
+  retiredAt: z.coerce.date().nullable().optional(),
+  interviewer: z.string().max(200).nullable().optional(),
+  recruitmentMedia: z.string().max(200).nullable().optional(),
+  photoIdVerifiedAt: z.coerce.date().nullable().optional(),
+  residenceCertificateVerifiedAt: z.coerce.date().nullable().optional(),
   availableOptions: z.array(z.string()).optional().default([]),
   availableOptionSettings: z
     .array(
@@ -197,6 +209,8 @@ type CastDesignationTierSelection = {
   specialDesignationFeeId?: string | null
   panelTakeHomeBonusId?: string | null
   regularTakeHomeBonusId?: string | null
+  freeTakeHomeBonusId?: string | null
+  recommendedTakeHomeBonusId?: string | null
 }
 
 async function designationTiersBelongToStore(
@@ -208,7 +222,13 @@ async function designationTiersBelongToStore(
     expectedKinds.set(selection.specialDesignationFeeId, new Set(['other']))
   }
   if (selection.panelTakeHomeBonusId) {
-    expectedKinds.set(selection.panelTakeHomeBonusId, new Set(['panel', 'free']))
+    expectedKinds.set(selection.panelTakeHomeBonusId, new Set(['panel']))
+  }
+  if (selection.freeTakeHomeBonusId) {
+    expectedKinds.set(selection.freeTakeHomeBonusId, new Set(['free']))
+  }
+  if (selection.recommendedTakeHomeBonusId) {
+    expectedKinds.set(selection.recommendedTakeHomeBonusId, new Set(['recommend']))
   }
   if (selection.regularTakeHomeBonusId) {
     expectedKinds.set(selection.regularTakeHomeBonusId, new Set(['repeat']))
@@ -364,11 +384,25 @@ async function fetchCastListWithRelations(
         panelTakeHomeBonusTier: { select: { name: true, price: true } },
         regularTakeHomeBonusId: true,
         regularTakeHomeBonusTier: { select: { name: true, price: true } },
+        freeTakeHomeBonusId: true,
+        freeTakeHomeBonusTier: { select: { name: true, price: true } },
+        recommendedTakeHomeBonusId: true,
+        recommendedTakeHomeBonusTier: { select: { name: true, price: true } },
         regularDesignationFee: true,
         panelDesignationRank: true,
         regularDesignationRank: true,
         workStatus: true,
         employmentStatus: true,
+        phone: true,
+        birthDate: true,
+        blogWidget: true,
+        snsAccount: true,
+        joinedAt: true,
+        retiredAt: true,
+        interviewer: true,
+        recruitmentMedia: true,
+        photoIdVerifiedAt: true,
+        residenceCertificateVerifiedAt: true,
         availableOptions: true,
         welfareExpenseRate: true,
         storeId: true,

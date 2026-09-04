@@ -77,62 +77,78 @@ model Store {
 }
 
 model Cast {
-  id                        String                         @id @default(cuid())
-  name                      String
-  nameKana                  String?
-  age                       Int
-  height                    Int
-  bust                      String
-  waist                     Int
-  hip                       Int
-  type                      String
-  image                     String
-  images                    String[]
-  description               String
-  publicProfile             Json?
-  netReservation            Boolean
-  requestAttendanceEnabled  Boolean                        @default(false)
-  specialDesignationFee     Int?
-  specialDesignationFeeId   String?
-  panelTakeHomeBonusId      String?
-  regularTakeHomeBonusId    String?
-  regularDesignationFee     Int?
-  panelDesignationRank      Int
-  regularDesignationRank    Int
-  workStatus                String
-  employmentStatus          String                         @default("provisional")
-  availableOptions          String[]                       @default([])
-  castOptionSettings        CastOptionSetting[]
-  lineUserId                String?                        @unique
-  welfareExpenseRate        Decimal?
-  mediaComment              String?
-  mediaCommentSource        String?                        @default("manual")
-  mediaSyncExcluded         Boolean                        @default(false)
-  scheduleTemplates         Json                           @default("[]")
-  loginEmail                String?                        @unique
-  passwordHash              String?
-  storeId                   String
-  createdAt                 DateTime                       @default(now())
-  updatedAt                 DateTime                       @updatedAt
-  schedules                 CastSchedule[]
-  ngByCustomers             NgCastEntry[]
-  reservations              Reservation[]
-  reviews                   Review[]
-  messages                  Message[]
-  lineLogs                  ReservationLineLog[]
-  attendanceRequests        ReservationAttendanceRequest[]
-  settlementPayments        SettlementPayment[]
-  ledgerEntries             CastLedgerEntry[]
-  lineRegistrationToken     CastLineRegistrationToken?
-  specialDesignationFeeTier DesignationFee?                @relation("CastSpecialDesignationFee", fields: [specialDesignationFeeId], references: [id], onDelete: SetNull)
-  panelTakeHomeBonusTier    DesignationFee?                @relation("CastPanelTakeHomeBonus", fields: [panelTakeHomeBonusId], references: [id], onDelete: SetNull)
-  regularTakeHomeBonusTier  DesignationFee?                @relation("CastRegularTakeHomeBonus", fields: [regularTakeHomeBonusId], references: [id], onDelete: SetNull)
-  store                     Store                          @relation(fields: [storeId], references: [id])
+  id                             String                         @id @default(cuid())
+  name                           String
+  nameKana                       String?
+  age                            Int
+  height                         Int
+  bust                           String
+  waist                          Int
+  hip                            Int
+  type                           String
+  image                          String
+  images                         String[]
+  description                    String
+  publicProfile                  Json?
+  netReservation                 Boolean
+  requestAttendanceEnabled       Boolean                        @default(false)
+  specialDesignationFee          Int?
+  specialDesignationFeeId        String?
+  panelTakeHomeBonusId           String?
+  regularTakeHomeBonusId         String?
+  freeTakeHomeBonusId            String?
+  recommendedTakeHomeBonusId     String?
+  regularDesignationFee          Int?
+  panelDesignationRank           Int
+  regularDesignationRank         Int
+  workStatus                     String
+  employmentStatus               String                         @default("active")
+  phone                          String?
+  birthDate                      DateTime?
+  blogWidget                     String?
+  snsAccount                     String?
+  joinedAt                       DateTime?
+  retiredAt                      DateTime?
+  interviewer                    String?
+  recruitmentMedia               String?
+  photoIdVerifiedAt              DateTime?
+  residenceCertificateVerifiedAt DateTime?
+  availableOptions               String[]                       @default([])
+  castOptionSettings             CastOptionSetting[]
+  lineUserId                     String?                        @unique
+  welfareExpenseRate             Decimal?
+  mediaComment                   String?
+  mediaCommentSource             String?                        @default("manual")
+  mediaSyncExcluded              Boolean                        @default(false)
+  scheduleTemplates              Json                           @default("[]")
+  loginEmail                     String?                        @unique
+  passwordHash                   String?
+  storeId                        String
+  createdAt                      DateTime                       @default(now())
+  updatedAt                      DateTime                       @updatedAt
+  schedules                      CastSchedule[]
+  ngByCustomers                  NgCastEntry[]
+  reservations                   Reservation[]
+  reviews                        Review[]
+  messages                       Message[]
+  lineLogs                       ReservationLineLog[]
+  attendanceRequests             ReservationAttendanceRequest[]
+  settlementPayments             SettlementPayment[]
+  ledgerEntries                  CastLedgerEntry[]
+  lineRegistrationToken          CastLineRegistrationToken?
+  specialDesignationFeeTier      DesignationFee?                @relation("CastSpecialDesignationFee", fields: [specialDesignationFeeId], references: [id], onDelete: SetNull)
+  panelTakeHomeBonusTier         DesignationFee?                @relation("CastPanelTakeHomeBonus", fields: [panelTakeHomeBonusId], references: [id], onDelete: SetNull)
+  regularTakeHomeBonusTier       DesignationFee?                @relation("CastRegularTakeHomeBonus", fields: [regularTakeHomeBonusId], references: [id], onDelete: SetNull)
+  freeTakeHomeBonusTier          DesignationFee?                @relation("CastFreeTakeHomeBonus", fields: [freeTakeHomeBonusId], references: [id], onDelete: SetNull)
+  recommendedTakeHomeBonusTier   DesignationFee?                @relation("CastRecommendedTakeHomeBonus", fields: [recommendedTakeHomeBonusId], references: [id], onDelete: SetNull)
+  store                          Store                          @relation(fields: [storeId], references: [id])
 
   @@index([storeId])
   @@index([specialDesignationFeeId])
   @@index([panelTakeHomeBonusId])
   @@index([regularTakeHomeBonusId])
+  @@index([freeTakeHomeBonusId])
+  @@index([recommendedTakeHomeBonusId])
 }
 
 enum NgAssignmentSource {
@@ -417,26 +433,29 @@ enum DesignationFeeKind {
   free
   repeat
   panel
+  recommend
   other
 }
 
 model DesignationFee {
-  id                        String             @id @default(cuid())
-  name                      String
-  price                     Int                @default(0)
-  storeShare                Int                @default(0)
-  castShare                 Int                @default(0)
-  description               String?
-  sortOrder                 Int                @default(0)
-  isActive                  Boolean            @default(true)
-  kind                      DesignationFeeKind @default(other)
-  storeId                   String
-  createdAt                 DateTime           @default(now())
-  updatedAt                 DateTime           @updatedAt
-  store                     Store              @relation(fields: [storeId], references: [id])
-  specialDesignationCasts   Cast[]             @relation("CastSpecialDesignationFee")
-  panelTakeHomeBonusCasts   Cast[]             @relation("CastPanelTakeHomeBonus")
-  regularTakeHomeBonusCasts Cast[]             @relation("CastRegularTakeHomeBonus")
+  id                            String             @id @default(cuid())
+  name                          String
+  price                         Int                @default(0)
+  storeShare                    Int                @default(0)
+  castShare                     Int                @default(0)
+  description                   String?
+  sortOrder                     Int                @default(0)
+  isActive                      Boolean            @default(true)
+  kind                          DesignationFeeKind @default(other)
+  storeId                       String
+  createdAt                     DateTime           @default(now())
+  updatedAt                     DateTime           @updatedAt
+  store                         Store              @relation(fields: [storeId], references: [id])
+  specialDesignationCasts       Cast[]             @relation("CastSpecialDesignationFee")
+  panelTakeHomeBonusCasts       Cast[]             @relation("CastPanelTakeHomeBonus")
+  regularTakeHomeBonusCasts     Cast[]             @relation("CastRegularTakeHomeBonus")
+  freeTakeHomeBonusCasts        Cast[]             @relation("CastFreeTakeHomeBonus")
+  recommendedTakeHomeBonusCasts Cast[]             @relation("CastRecommendedTakeHomeBonus")
 
   @@index([storeId])
 }
@@ -474,6 +493,7 @@ model CastSchedule {
   endTime     DateTime
   isAvailable Boolean
   notes       String?
+  mediaText   String?
   status      String   @default("出勤予定")
   cast        Cast     @relation(fields: [castId], references: [id])
 

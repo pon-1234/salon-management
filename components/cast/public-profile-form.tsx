@@ -1,5 +1,10 @@
 'use client'
 
+/**
+ * @design_doc   Notion task #282 public profile and image settings consolidation
+ * @related_to   CastManagePage and CastForm basic information editor
+ * @known_issues None
+ */
 import React, { useState } from 'react'
 import { Cast, PublicProfile } from '@/lib/cast/types'
 import { Button } from '@/components/ui/button'
@@ -13,13 +18,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Save, X, Loader2 } from 'lucide-react'
+import { ArrowDown, ArrowUp, Save, X, Loader2, Plus } from 'lucide-react'
 import { Switch } from '@/components/ui/switch'
 import { FormSection } from '@/components/cast/form-section'
 import { cn } from '@/lib/utils'
+import { ImageUpload } from '@/components/ui/image-upload'
+import { moveGalleryImage } from '@/lib/cast/gallery-order'
+import { usePricing } from '@/hooks/use-pricing'
+import { isVisibleReservationOption } from '@/lib/options/visibility'
 
 interface PublicProfileFormProps {
   cast: Cast
+  storeId: string
   onSubmit: (data: {
     publicProfile: PublicProfile
     basicInfo: Partial<Cast>
@@ -99,12 +109,14 @@ const SelectablePill = ({
 
 export function PublicProfileForm({
   cast,
+  storeId,
   onSubmit,
   onCancel,
   isEditing = false,
   setIsEditing,
   isSubmitting = false,
 }: PublicProfileFormProps) {
+  const { optionPrices } = usePricing(storeId)
   const fieldId = (suffix: string) => `profile-${suffix}`
   const [publicProfile, setPublicProfile] = useState<PublicProfile>({
     bustCup: cast?.publicProfile?.bustCup || '',
@@ -136,6 +148,11 @@ export function PublicProfileForm({
     hip: cast?.hip || 0,
     type: cast?.type || '',
     description: cast?.description || '',
+    mediaComment: cast?.mediaComment || '',
+    mediaSyncExcluded: cast?.mediaSyncExcluded ?? false,
+    image: cast?.image || '',
+    images: cast?.images ? [...cast.images] : [],
+    availableOptions: cast?.availableOptions ? [...cast.availableOptions] : [],
   })
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -175,6 +192,11 @@ export function PublicProfileForm({
       hip: cast?.hip || 0,
       type: cast?.type || '',
       description: cast?.description || '',
+      mediaComment: cast?.mediaComment || '',
+      mediaSyncExcluded: cast?.mediaSyncExcluded ?? false,
+      image: cast?.image || '',
+      images: cast?.images ? [...cast.images] : [],
+      availableOptions: cast?.availableOptions ? [...cast.availableOptions] : [],
     })
     setIsEditing?.(false)
     onCancel?.()
@@ -301,7 +323,7 @@ export function PublicProfileForm({
             </div>
           </div>
           <div className="space-y-2">
-            <Label htmlFor={fieldId('description')}>プロフィール文</Label>
+            <Label htmlFor={fieldId('description')}>紹介文</Label>
             <Textarea
               id={fieldId('description')}
               value={basicInfo.description || ''}
@@ -310,6 +332,138 @@ export function PublicProfileForm({
               className="min-h-[120px]"
               disabled={!isEditing}
             />
+          </div>
+        </FormSection>
+
+        <FormSection
+          title="媒体コメント・画像・可能オプション"
+          description="公開ページと予約時の表示内容をまとめて設定します。"
+        >
+          <div className="space-y-2">
+            <Label htmlFor={fieldId('mediaComment')}>媒体掲載用コメント</Label>
+            <Textarea
+              id={fieldId('mediaComment')}
+              value={basicInfo.mediaComment}
+              onChange={(event) => handleBasicInfoChange('mediaComment', event.target.value)}
+              disabled={!isEditing}
+            />
+          </div>
+          <div className="flex items-center justify-between rounded-lg border bg-muted/40 px-4 py-3">
+            <div>
+              <Label htmlFor={fieldId('mediaSyncExcluded')}>媒体連動から除外</Label>
+              <p className="text-xs text-muted-foreground">
+                個別に内容を管理し、自動連動しない場合だけオンにします。
+              </p>
+            </div>
+            <Switch
+              id={fieldId('mediaSyncExcluded')}
+              checked={basicInfo.mediaSyncExcluded}
+              onCheckedChange={(checked) => handleBasicInfoChange('mediaSyncExcluded', checked)}
+              disabled={!isEditing}
+            />
+          </div>
+          <div className="space-y-3">
+            <Label>メイン画像・ギャラリー</Label>
+            {basicInfo.images.map((image, index) => (
+              <div key={`${image}-${index}`} className="grid gap-2 sm:grid-cols-[1fr_auto]">
+                <ImageUpload
+                  value={image}
+                  onChange={(url) =>
+                    setBasicInfo((previous) => ({
+                      ...previous,
+                      images: previous.images.map((item, itemIndex) =>
+                        itemIndex === index ? url : item
+                      ),
+                      image: index === 0 ? url : previous.image,
+                    }))
+                  }
+                  onRemove={() =>
+                    setBasicInfo((previous) => {
+                      const images = previous.images.filter((_, itemIndex) => itemIndex !== index)
+                      return { ...previous, images, image: images[0] ?? '' }
+                    })
+                  }
+                  index={index}
+                  disabled={!isEditing}
+                />
+                <div className="flex gap-1">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    aria-label={`画像${index + 1}を前へ`}
+                    disabled={!isEditing || index === 0}
+                    onClick={() =>
+                      setBasicInfo((previous) => {
+                        const images = moveGalleryImage(previous.images, index, -1)
+                        return { ...previous, images, image: images[0] ?? '' }
+                      })
+                    }
+                  >
+                    <ArrowUp className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    aria-label={`画像${index + 1}を後ろへ`}
+                    disabled={!isEditing || index === basicInfo.images.length - 1}
+                    onClick={() =>
+                      setBasicInfo((previous) => {
+                        const images = moveGalleryImage(previous.images, index, 1)
+                        return { ...previous, images, image: images[0] ?? '' }
+                      })
+                    }
+                  >
+                    <ArrowDown className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            ))}
+            {basicInfo.images.length < 10 ? (
+              <Button
+                type="button"
+                variant="outline"
+                disabled={!isEditing}
+                onClick={() =>
+                  setBasicInfo((previous) => ({ ...previous, images: [...previous.images, ''] }))
+                }
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                画像を追加
+              </Button>
+            ) : null}
+          </div>
+          <div className="space-y-2">
+            <Label>可能オプション</Label>
+            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              {optionPrices
+                .filter((option) => option.isActive !== false && isVisibleReservationOption(option))
+                .map((option) => {
+                  const selected = basicInfo.availableOptions.includes(option.id)
+                  return (
+                    <label
+                      key={option.id}
+                      className="flex items-center gap-2 rounded border p-3 text-sm"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selected}
+                        disabled={!isEditing}
+                        onChange={(event) =>
+                          setBasicInfo((previous) => ({
+                            ...previous,
+                            availableOptions: event.target.checked
+                              ? [...previous.availableOptions, option.id]
+                              : previous.availableOptions.filter((id) => id !== option.id),
+                          }))
+                        }
+                      />
+                      {option.name}
+                    </label>
+                  )
+                })}
+            </div>
           </div>
         </FormSection>
 

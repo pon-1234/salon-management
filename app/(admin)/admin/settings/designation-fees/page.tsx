@@ -47,6 +47,7 @@ const KIND_LABELS: Record<DesignationFeeKind, string> = {
   free: 'フリー',
   repeat: 'リピート指名',
   panel: 'パネル・おすすめ',
+  recommend: 'おすすめP指名',
   other: 'その他',
 }
 
@@ -103,6 +104,10 @@ export default function DesignationFeesPage() {
   }, [loadFees])
 
   const orderedFees = useMemo(() => [...fees].sort((a, b) => a.sortOrder - b.sortOrder), [fees])
+  const hasMissingStandardRanks = useMemo(() => {
+    const existingNames = new Set(fees.map(({ name }) => name))
+    return STANDARD_RANK_PRESETS.some(({ name }) => !existingNames.has(name))
+  }, [fees])
 
   const openCreateDialog = useCallback(() => {
     setEditingFee(null)
@@ -286,9 +291,11 @@ export default function DesignationFeesPage() {
           backIcon={ArrowLeft}
           actions={
             <>
-              <Button variant="outline" onClick={() => void addStandardRanks()}>
-                標準ランクを一括追加
-              </Button>
+              {hasMissingStandardRanks && (
+                <Button variant="outline" onClick={() => void addStandardRanks()}>
+                  標準ランクを一括追加
+                </Button>
+              )}
               <Button onClick={openCreateDialog}>
                 <Plus className="mr-2 h-4 w-4" /> 新規項目追加
               </Button>

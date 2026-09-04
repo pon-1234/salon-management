@@ -19,6 +19,7 @@ export interface CastScheduleStatus {
   startTime?: string
   endTime?: string
   note?: string
+  mediaText?: string
   isAvailable?: boolean
 }
 
@@ -30,6 +31,7 @@ export interface CastScheduleEntry {
   image: string
   hasPhone: boolean
   hasBusinessContact: boolean
+  designationRank?: string | null
   schedule: {
     [date: string]: CastScheduleStatus
   }

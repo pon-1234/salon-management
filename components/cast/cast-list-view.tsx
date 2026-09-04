@@ -10,6 +10,8 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { SafeImage } from '@/components/ui/safe-image'
 import Link from 'next/link'
+import { AlertTriangle, MessageSquare, Phone } from 'lucide-react'
+import { getCastVerificationWarnings } from '@/lib/cast/verification-warnings'
 
 interface CastListViewProps {
   casts: Cast[]
@@ -24,6 +26,7 @@ export function CastListView({ casts, view = 'grid' }: CastListViewProps) {
       <div className="grid grid-cols-2 gap-2 md:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-8">
         {casts.map((member) => {
           const memberImage = member.image?.trim() ? member.image : FALLBACK_IMAGE
+          const warnings = getCastVerificationWarnings(member)
 
           return (
             <Card key={member.id} className="overflow-hidden">
@@ -62,6 +65,29 @@ export function CastListView({ casts, view = 'grid' }: CastListViewProps) {
                     </p>
                     <p>{member.type}</p>
                   </div>
+                  {warnings.length > 0 ? (
+                    <div className="mt-2 text-xs text-amber-700" title={warnings.join(' / ')}>
+                      <AlertTriangle className="mr-1 inline h-3 w-3" />
+                      本人確認 {warnings.length}件
+                    </div>
+                  ) : null}
+                  <div className="mt-2 flex gap-1">
+                    {member.phone ? (
+                      <Button size="sm" variant="outline" className="h-7 px-2" asChild>
+                        <a href={`tel:${member.phone}`} aria-label={`${member.name}へ電話`}>
+                          <Phone className="h-3 w-3" />
+                        </a>
+                      </Button>
+                    ) : null}
+                    <Button size="sm" variant="outline" className="h-7 px-2" asChild>
+                      <Link
+                        href={`/admin/chat?castId=${encodeURIComponent(member.id)}`}
+                        aria-label={`${member.name}とチャット`}
+                      >
+                        <MessageSquare className="h-3 w-3" />
+                      </Link>
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -75,6 +101,7 @@ export function CastListView({ casts, view = 'grid' }: CastListViewProps) {
     <div className="divide-y rounded-lg border bg-white">
       {casts.map((member) => {
         const memberImage = member.image?.trim() ? member.image : FALLBACK_IMAGE
+        const warnings = getCastVerificationWarnings(member)
 
         return (
           <div key={member.id} className="flex items-center gap-3 p-2">
@@ -106,6 +133,12 @@ export function CastListView({ casts, view = 'grid' }: CastListViewProps) {
                 <Badge variant={member.employmentStatus === 'retired' ? 'secondary' : 'outline'}>
                   {employmentLabel(member.employmentStatus)}
                 </Badge>
+                {warnings.length > 0 ? (
+                  <Badge variant="outline" className="border-amber-300 text-amber-700">
+                    <AlertTriangle className="mr-1 h-3 w-3" />
+                    本人確認 {warnings.length}件
+                  </Badge>
+                ) : null}
               </div>
               <div className="mt-3 flex flex-wrap gap-2">
                 <Button size="sm" variant="outline" className="h-8" asChild>

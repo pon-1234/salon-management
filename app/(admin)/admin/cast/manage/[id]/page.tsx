@@ -22,6 +22,8 @@ import {
   Calculator,
   BarChart3,
   AlertTriangle,
+  Phone,
+  MessageSquare,
 } from 'lucide-react'
 import { CastRepositoryImpl } from '@/lib/cast/repository-impl'
 import { toast } from '@/hooks/use-toast'
@@ -34,6 +36,8 @@ import { WorkPerformanceTab } from '@/components/cast/work-performance-tab'
 import { CastLineRegistrationPanel } from '@/components/cast/cast-line-registration-panel'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useStore } from '@/contexts/store-context'
+import { getCastVerificationWarnings } from '@/lib/cast/verification-warnings'
+import Link from 'next/link'
 
 const CAST_MANAGE_TABS = new Set([
   'overview',
@@ -255,11 +259,11 @@ export default function CastManagePage({ params }: { params: Promise<{ id: strin
                   </TabsTrigger>
                   <TabsTrigger value="edit" className="data-[state=active]:bg-emerald-50">
                     <Settings className="mr-2 h-4 w-4" />
-                    プロフィール編集
+                    基本情報編集
                   </TabsTrigger>
                   <TabsTrigger value="profile" className="data-[state=active]:bg-emerald-50">
                     <UserRound className="mr-2 h-4 w-4" />
-                    公開プロフィール
+                    公開プロフィール・画像設定
                   </TabsTrigger>
                   <TabsTrigger value="sales" className="data-[state=active]:bg-emerald-50">
                     <DollarSign className="mr-2 h-4 w-4" />
@@ -276,6 +280,31 @@ export default function CastManagePage({ params }: { params: Promise<{ id: strin
                 </TabsList>
 
                 <TabsContent value="overview" className="space-y-6">
+                  {getCastVerificationWarnings(cast).map((warning) => (
+                    <div
+                      key={warning}
+                      className="flex items-center gap-2 rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+                    >
+                      <AlertTriangle className="h-4 w-4" />
+                      {warning}
+                    </div>
+                  ))}
+                  <div className="flex flex-wrap gap-2">
+                    {cast.phone ? (
+                      <Button variant="outline" asChild>
+                        <a href={`tel:${cast.phone}`}>
+                          <Phone className="mr-2 h-4 w-4" />
+                          電話をかける
+                        </a>
+                      </Button>
+                    ) : null}
+                    <Button variant="outline" asChild>
+                      <Link href={`/admin/chat?castId=${encodeURIComponent(cast.id)}`}>
+                        <MessageSquare className="mr-2 h-4 w-4" />
+                        チャットを開く
+                      </Link>
+                    </Button>
+                  </div>
                   <CastDashboard
                     cast={cast}
                     onUpdate={(data) => void handleSubmit(data)}
@@ -292,7 +321,9 @@ export default function CastManagePage({ params }: { params: Promise<{ id: strin
                 <TabsContent value="edit" className="space-y-10">
                   <section className="space-y-4">
                     <div>
-                      <h2 className="text-xl font-semibold">基本情報・詳細設定</h2>
+                      <h2 className="text-xl font-semibold">
+                        基本情報・アカウント情報・その他設定
+                      </h2>
                       <p className="text-sm text-muted-foreground">
                         キャストの基本情報や稼働ステータス、料金設定を更新します。保存するとすぐに管理画面へ反映されます。
                       </p>
@@ -310,13 +341,14 @@ export default function CastManagePage({ params }: { params: Promise<{ id: strin
                 <TabsContent value="profile" className="space-y-4">
                   <section className="space-y-4">
                     <div>
-                      <h2 className="text-xl font-semibold">公開プロフィール</h2>
+                      <h2 className="text-xl font-semibold">公開プロフィール・画像設定</h2>
                       <p className="text-sm text-muted-foreground">
                         店舗サイトに表示される紹介情報を編集します。保存すると公開ページの表示が更新されます。
                       </p>
                     </div>
                     <PublicProfileForm
                       cast={cast}
+                      storeId={currentStore.id}
                       onSubmit={handlePublicProfileSubmit}
                       isEditing={true}
                       isSubmitting={isSaving}

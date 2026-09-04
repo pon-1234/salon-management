@@ -168,7 +168,7 @@ describe('POST /api/cast-schedule/batch', () => {
       tx.castSchedule.findUnique
         .mockResolvedValueOnce(null) // First date - no existing
         .mockResolvedValueOnce({ id: 'existing-1' }) // Second date - existing
-        .mockResolvedValueOnce({ id: 'existing-2' }) // Third date - for deletion
+        .mockResolvedValueOnce({ id: 'existing-2' }) // Third date - explicit holiday
 
       return callback(tx)
     })
@@ -210,7 +210,7 @@ describe('POST /api/cast-schedule/batch', () => {
 
     expect(response.status).toBe(200)
     expect(data.data.message).toBe('スケジュールを一括更新しました')
-    expect(data.data.updatedCount).toBe(2)
+    expect(data.data.updatedCount).toBe(3)
   })
 
   it('should require admin authentication', async () => {

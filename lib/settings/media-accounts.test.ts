@@ -7,7 +7,9 @@ import { describe, expect, it } from 'vitest'
 import {
   decryptMediaAccounts,
   encryptMediaAccounts,
+  hydrateMediaAccountsFromMarketingCatalog,
   mergeMediaNamesIntoMarketingCatalog,
+  moveMediaAccount,
 } from './media-accounts'
 
 describe('media accounts', () => {
@@ -40,5 +42,29 @@ describe('media accounts', () => {
         ]
       )
     ).toEqual(['電話', 'Heaven'])
+  })
+
+  it('imports current marketing channels without duplicating saved media', () => {
+    expect(
+      hydrateMediaAccountsFromMarketingCatalog(
+        [{ id: 'saved', name: 'Heaven', category: 'sales' as const }],
+        ['電話', 'Heaven', 'Infinity Talk']
+      ).map(({ name, category }) => ({ name, category }))
+    ).toEqual([
+      { name: 'Heaven', category: 'sales' },
+      { name: '電話', category: 'sales' },
+      { name: 'Infinity Talk', category: 'sales' },
+    ])
+  })
+
+  it('reorders media while preserving every account exactly once', () => {
+    const accounts = [
+      { id: 'a', name: 'A', category: 'sales' as const },
+      { id: 'b', name: 'B', category: 'recruitment' as const },
+      { id: 'c', name: 'C', category: 'store' as const },
+    ]
+
+    expect(moveMediaAccount(accounts, 'c', -1).map(({ id }) => id)).toEqual(['a', 'c', 'b'])
+    expect(moveMediaAccount(accounts, 'a', -1)).toEqual(accounts)
   })
 })

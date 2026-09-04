@@ -664,7 +664,7 @@ describe('CastScheduleUseCases', () => {
         isAvailable: true,
         note: '媒体掲載テキスト',
       })
-      expect(cast1Entry?.schedule['2024-01-16']).toEqual({ type: '休日' })
+      expect(cast1Entry?.schedule['2024-01-16']).toEqual({ type: '未入力' })
       expect(cast1Entry?.schedule['2024-01-17']).toEqual({
         type: '出勤予定',
         startTime: '14:00',

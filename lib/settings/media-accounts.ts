@@ -4,18 +4,14 @@
  * @known_issues Password recovery depends on NEXTAUTH_SECRET remaining unchanged
  */
 import { createCipheriv, createDecipheriv, createHash, randomBytes } from 'node:crypto'
-
-export type MediaCategory = 'sales' | 'recruitment'
-
-export interface MediaAccountInput {
-  id: string
-  name: string
-  category: MediaCategory
-  publicUrl?: string
-  adminUrl?: string
-  loginId?: string
-  password?: string
-}
+import type { MediaAccountInput } from './media-catalog'
+export {
+  hydrateMediaAccountsFromMarketingCatalog,
+  mergeMediaNamesIntoMarketingCatalog,
+  moveMediaAccount,
+  type MediaAccountInput,
+  type MediaCategory,
+} from './media-catalog'
 
 interface StoredMediaAccount extends Omit<MediaAccountInput, 'password'> {
   passwordCiphertext?: string
@@ -47,7 +43,11 @@ export function decryptMediaAccounts(stored: unknown, secret: string): MediaAcco
   return stored.flatMap((candidate) => {
     if (!candidate || typeof candidate !== 'object') return []
     const account = candidate as StoredMediaAccount
-    if (!account.id || !account.name || !['sales', 'recruitment'].includes(account.category)) {
+    if (
+      !account.id ||
+      !account.name ||
+      !['sales', 'recruitment', 'store'].includes(account.category)
+    ) {
       return []
     }
     let password = ''
@@ -66,16 +66,4 @@ export function decryptMediaAccounts(stored: unknown, secret: string): MediaAcco
     const { passwordCiphertext: _passwordCiphertext, ...publicAccount } = account
     return [{ ...publicAccount, password }]
   })
-}
-
-export function mergeMediaNamesIntoMarketingCatalog(
-  channels: string[],
-  accounts: Array<Pick<MediaAccountInput, 'id' | 'name' | 'category'>>
-): string[] {
-  return Array.from(
-    new Set([
-      ...channels,
-      ...accounts.filter(({ category }) => category === 'sales').map(({ name }) => name.trim()),
-    ])
-  ).filter(Boolean)
 }

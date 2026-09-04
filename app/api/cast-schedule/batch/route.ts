@@ -33,6 +33,7 @@ const batchScheduleSchema = z.object({
         endTime: scheduleTimeSchema.optional(),
         isAvailable: z.boolean().optional(),
         note: z.string().trim().max(1000).optional(),
+        mediaText: z.string().trim().max(1000).optional(),
       })
       .superRefine((schedule, context) => {
         if (schedule.status !== 'working') return
@@ -87,11 +88,25 @@ export async function POST(request: NextRequest) {
         })
 
         if (schedule.status === 'holiday') {
-          // Delete existing schedule if it's a holiday
+          const holidayData = {
+            startTime: date,
+            endTime: date,
+            isAvailable: false,
+            notes: schedule.note || null,
+            mediaText: schedule.mediaText || null,
+            status: '休日',
+          }
           if (existing) {
-            await tx.castSchedule.delete({
+            const updated = await tx.castSchedule.update({
               where: { id: existing.id },
+              data: holidayData,
             })
+            updatedSchedules.push(updated)
+          } else {
+            const created = await tx.castSchedule.create({
+              data: { castId, date, ...holidayData },
+            })
+            updatedSchedules.push(created)
           }
           continue
         }
@@ -113,6 +128,7 @@ export async function POST(request: NextRequest) {
                 endTime,
                 isAvailable: schedule.isAvailable ?? true,
                 notes: schedule.note || null,
+                mediaText: schedule.mediaText || null,
                 status: schedule.workStatus ?? '出勤予定',
               },
             })
@@ -127,6 +143,7 @@ export async function POST(request: NextRequest) {
                 endTime,
                 isAvailable: schedule.isAvailable ?? true,
                 notes: schedule.note || null,
+                mediaText: schedule.mediaText || null,
                 status: schedule.workStatus ?? '出勤予定',
               },
             })

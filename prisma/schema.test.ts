@@ -35,7 +35,7 @@ describe('Prisma schema', () => {
   })
 
   it('persists a cast employment lifecycle independently from daily attendance', () => {
-    expect(schemaContent).toMatch(/employmentStatus\s+String\s+@default\("provisional"\)/)
+    expect(schemaContent).toMatch(/employmentStatus\s+String\s+@default\("active"\)/)
     const migration = readFileSync(
       join(
         process.cwd(),
@@ -50,6 +50,17 @@ describe('Prisma schema', () => {
       'ADD COLUMN "employmentStatus" TEXT NOT NULL DEFAULT \'provisional\''
     )
     expect(migration).toContain('SET "employmentStatus" = \'active\'')
+    const revisionMigration = readFileSync(
+      join(
+        process.cwd(),
+        'prisma',
+        'migrations',
+        '20260904190000_cast_profile_and_schedule_revision',
+        'migration.sql'
+      ),
+      'utf8'
+    )
+    expect(revisionMigration).toContain('ALTER COLUMN "employmentStatus" SET DEFAULT \'active\'')
   })
 
   it('persists the shared six-state schedule status and encrypted media accounts', () => {
@@ -483,5 +494,25 @@ describe('Prisma schema', () => {
     expect(migration).toContain('ADD COLUMN "cancellationReason" TEXT')
     expect(migration).not.toMatch(/DROP\s+(?:TABLE|COLUMN)/iu)
     expect(migration).not.toMatch(/DELETE\s+FROM/iu)
+  })
+
+  it('persists cast onboarding data, four take-home selections, and schedule media text', () => {
+    for (const field of [
+      'phone',
+      'birthDate',
+      'blogWidget',
+      'snsAccount',
+      'joinedAt',
+      'retiredAt',
+      'interviewer',
+      'recruitmentMedia',
+      'photoIdVerifiedAt',
+      'residenceCertificateVerifiedAt',
+      'freeTakeHomeBonusId',
+      'recommendedTakeHomeBonusId',
+      'mediaText',
+    ]) {
+      expect(schemaContent).toContain(field)
+    }
   })
 })

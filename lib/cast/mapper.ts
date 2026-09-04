@@ -172,6 +172,12 @@ export const normalizeCast = (raw: any): Cast => {
     regularTakeHomeBonusId: raw.regularTakeHomeBonusId ?? null,
     regularTakeHomeBonus: Number(raw.regularTakeHomeBonusTier?.price ?? 0),
     regularTakeHomeBonusLabel: raw.regularTakeHomeBonusTier?.name ?? null,
+    freeTakeHomeBonusId: raw.freeTakeHomeBonusId ?? null,
+    freeTakeHomeBonus: Number(raw.freeTakeHomeBonusTier?.price ?? 0),
+    freeTakeHomeBonusLabel: raw.freeTakeHomeBonusTier?.name ?? null,
+    recommendedTakeHomeBonusId: raw.recommendedTakeHomeBonusId ?? null,
+    recommendedTakeHomeBonus: Number(raw.recommendedTakeHomeBonusTier?.price ?? 0),
+    recommendedTakeHomeBonusLabel: raw.recommendedTakeHomeBonusTier?.name ?? null,
     regularDesignationFee:
       raw.regularDesignationFee === null || raw.regularDesignationFee === undefined
         ? null
@@ -180,6 +186,16 @@ export const normalizeCast = (raw: any): Cast => {
     regularDesignationRank: Number(raw.regularDesignationRank ?? 0),
     workStatus: raw.workStatus ?? '出勤',
     employmentStatus: raw.employmentStatus ?? 'active',
+    phone: raw.phone ?? null,
+    birthDate: raw.birthDate ?? null,
+    blogWidget: raw.blogWidget ?? null,
+    snsAccount: raw.snsAccount ?? null,
+    joinedAt: raw.joinedAt ?? null,
+    retiredAt: raw.retiredAt ?? null,
+    interviewer: raw.interviewer ?? null,
+    recruitmentMedia: raw.recruitmentMedia ?? null,
+    photoIdVerifiedAt: raw.photoIdVerifiedAt ?? null,
+    residenceCertificateVerifiedAt: raw.residenceCertificateVerifiedAt ?? null,
     lineUserId: raw.lineUserId ?? null,
     welfareExpenseRate:
       raw.welfareExpenseRate === null || raw.welfareExpenseRate === undefined

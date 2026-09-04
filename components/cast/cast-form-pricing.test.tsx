@@ -63,6 +63,16 @@ const getDesignationFeesMock = vi.hoisted(() =>
       isActive: true,
       kind: 'free',
     },
+    {
+      id: 'recommend-up-1500',
+      name: 'おすすめUP',
+      price: 1500,
+      storeShare: 0,
+      castShare: 1500,
+      sortOrder: 5,
+      isActive: true,
+      kind: 'recommend',
+    },
   ])
 )
 
@@ -78,7 +88,7 @@ beforeAll(() => {
 })
 
 describe('CastForm pricing scope', () => {
-  it('requests pricing for the selected administrator store', () => {
+  it('requests designation pricing for the selected administrator store', async () => {
     vi.stubGlobal(
       'ResizeObserver',
       class {
@@ -90,7 +100,9 @@ describe('CastForm pricing scope', () => {
 
     render(<CastForm storeId="uat-ikebukuro" cast={null} onSubmit={vi.fn()} isSubmitting={false} />)
 
-    expect(usePricingMock).toHaveBeenCalledWith('uat-ikebukuro')
+    await waitFor(() =>
+      expect(getDesignationFeesMock).toHaveBeenCalledWith({ storeId: 'uat-ikebukuro' })
+    )
   })
 
   it('selects the special designation fee from the store master including zero yen', async () => {
@@ -104,12 +116,15 @@ describe('CastForm pricing scope', () => {
     expect(screen.getByRole('option', { name: 'ブロンズ（1,000円）' })).toBeInTheDocument()
   })
 
-  it('selects panel and repeat take-home bonuses from the same store master', async () => {
+  it('selects free, panel, recommended, and repeat take-home bonuses separately', async () => {
     render(<CastForm storeId="uat-ikebukuro" cast={null} onSubmit={vi.fn()} isSubmitting={false} />)
 
-    fireEvent.click(await screen.findByLabelText('パネル・おすすめ・フリー指名手取UP'))
+    fireEvent.click(await screen.findByLabelText('フリー指名手取UP'))
+    expect(await screen.findByRole('option', { name: 'フリーUP（500円）' })).toBeInTheDocument()
+    fireEvent.click(screen.getByLabelText('パネル指名手取UP'))
     expect(await screen.findByRole('option', { name: 'パネルUP A（1,000円）' })).toBeInTheDocument()
-    expect(screen.getByRole('option', { name: 'フリーUP（500円）' })).toBeInTheDocument()
+    fireEvent.click(screen.getByLabelText('おすすめP指名手取UP'))
+    expect(await screen.findByRole('option', { name: 'おすすめUP（1,500円）' })).toBeInTheDocument()
     fireEvent.click(screen.getByLabelText('本指名手取UP'))
     expect(await screen.findByRole('option', { name: '本指名UP B（2,000円）' })).toBeInTheDocument()
   })

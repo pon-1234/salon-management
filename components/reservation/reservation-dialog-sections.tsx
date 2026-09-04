@@ -360,7 +360,7 @@ export function ReservationPrimarySummary({
           )}
           <div className="grid gap-2 sm:grid-cols-2">
             <div>
-              {isEditing && hotelChoices.length > 0 ? (
+              {hotelChoices.length > 0 ? (
                 <div className="mb-2">
                   <Label htmlFor="summary-hotel-choice">登録ホテルから再選択</Label>
                   <select

@@ -12,6 +12,7 @@ type EditableDay = {
   endTime?: string
   isAvailable?: boolean
   note?: string
+  mediaText?: string
 }
 
 export type ScheduleBatchItem =
@@ -24,6 +25,7 @@ export type ScheduleBatchItem =
       endTime: string
       isAvailable?: boolean
       note?: string
+      mediaText?: string
     }
 
 export function buildScheduleBatchPayload(
@@ -42,6 +44,7 @@ export function buildScheduleBatchPayload(
         endTime: day.endTime,
         isAvailable: day.isAvailable,
         note: day.note,
+        mediaText: day.mediaText,
       },
     ]
   })

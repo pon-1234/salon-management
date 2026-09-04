@@ -177,6 +177,7 @@ export default function WeeklySchedulePage() {
             startTime: daySchedule.startTime,
             endTime: daySchedule.endTime,
             note: daySchedule.note,
+            mediaText: daySchedule.mediaText,
             isAvailable: daySchedule.isAvailable,
           },
         ])

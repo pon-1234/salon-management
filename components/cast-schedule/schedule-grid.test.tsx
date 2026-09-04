@@ -25,6 +25,7 @@ const entry: CastScheduleEntry = {
   image: '/cast.jpg',
   hasPhone: true,
   hasBusinessContact: true,
+  designationRank: 'ゴールド',
   schedule: {
     '2026-08-10': { type: '出勤予定', startTime: '10:00', endTime: '18:00' },
     '2026-08-11': { type: '休日' },
@@ -46,6 +47,7 @@ describe('ScheduleGrid', () => {
 
     expect(screen.getByRole('list', { name: '週間出勤一覧' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: '明里の週間予定を編集' })).toBeInTheDocument()
+    expect(screen.getByText('ランク: ゴールド')).toBeInTheDocument()
     expect(screen.queryByRole('table', { name: '週間出勤表' })).not.toBeInTheDocument()
 
     rerender(
@@ -57,6 +59,7 @@ describe('ScheduleGrid', () => {
     )
 
     expect(screen.getByRole('table', { name: '週間出勤表' })).toBeInTheDocument()
+    expect(screen.getByText('ランク: ゴールド')).toBeInTheDocument()
     expect(screen.queryByRole('list', { name: '週間出勤一覧' })).not.toBeInTheDocument()
   })
 

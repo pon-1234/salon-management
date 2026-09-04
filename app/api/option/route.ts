@@ -18,15 +18,10 @@ import { isUnknownStoreError } from '@/lib/store/errors'
 import { sanitizeResponseData } from '@/lib/http/sanitize-response'
 import { env } from '@/lib/config/env'
 import { toPublicOption } from '@/lib/pricing/public'
+import { isVisibleReservationOption } from '@/lib/options/visibility'
 
 const PRICING_PRIVATE_CAST_FIELDS = ['loginEmail', 'lineUserId', 'welfareExpenseRate']
 const OPTION_VISIBILITIES = ['public', 'internal'] as const
-const OBSOLETE_OPTION_NAMES = new Set(['旧システム無料系オプション #1'])
-
-function isObsoleteOption(option: { name?: string | null }): boolean {
-  return Boolean(option.name && OBSOLETE_OPTION_NAMES.has(option.name.trim()))
-}
-
 type OptionVisibility = (typeof OPTION_VISIBILITIES)[number]
 
 function isOptionVisibility(value: unknown): value is OptionVisibility {
@@ -314,7 +309,7 @@ export async function GET(request: NextRequest) {
         },
       })
 
-      if (!option || isObsoleteOption(option)) {
+      if (!option || !isVisibleReservationOption(option)) {
         return NextResponse.json({ error: 'Option not found' }, { status: 404 })
       }
 
@@ -358,7 +353,7 @@ export async function GET(request: NextRequest) {
       ],
     })
 
-    const selectableOptions = options.filter((option) => !isObsoleteOption(option))
+    const selectableOptions = options.filter(isVisibleReservationOption)
 
     if (isAdmin) {
       return NextResponse.json(sanitizePricingResponse(selectableOptions))

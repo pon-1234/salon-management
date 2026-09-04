@@ -18,6 +18,7 @@ describe('buildScheduleBatchPayload', () => {
         endTime: '20:00',
         isAvailable: false,
         note: '媒体用',
+        mediaText: '媒体にはこちらを掲載',
       },
     })
 
@@ -31,6 +32,7 @@ describe('buildScheduleBatchPayload', () => {
         endTime: '20:00',
         isAvailable: false,
         note: '媒体用',
+        mediaText: '媒体にはこちらを掲載',
       },
     ])
   })
@@ -54,6 +56,7 @@ describe('buildScheduleBatchPayload', () => {
         endTime: '20:00',
         isAvailable: undefined,
         note: undefined,
+        mediaText: undefined,
       },
     ])
   })

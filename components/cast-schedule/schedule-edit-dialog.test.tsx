@@ -55,7 +55,7 @@ describe('ScheduleEditDialog day templates', () => {
     } as Response)
   })
 
-  it('shows save at the top and does not inject generic shift templates', () => {
+  it('keeps the cast name and the only save control together at the top', () => {
     render(
       <ScheduleEditDialog
         open
@@ -68,7 +68,8 @@ describe('ScheduleEditDialog day templates', () => {
       />
     )
 
-    expect(screen.getAllByRole('button', { name: '保存' }).length).toBeGreaterThanOrEqual(2)
+    expect(screen.getAllByRole('button', { name: '保存' })).toHaveLength(1)
+    expect(screen.getByTestId('schedule-sticky-header')).toHaveTextContent('明里')
     expect(screen.queryByRole('button', { name: /昼勤/ })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /夜勤/ })).not.toBeInTheDocument()
   })
@@ -168,6 +169,76 @@ describe('ScheduleEditDialog day templates', () => {
         expect.objectContaining({ credentials: 'include', cache: 'no-store' })
       )
     )
+  })
+
+  it('keeps days without a saved record as 未入力 in the four-week editor', async () => {
+    render(
+      <ScheduleEditDialog
+        open
+        onOpenChange={vi.fn()}
+        castName="明里"
+        castId="cast-1"
+        startDate={new Date('2026-08-10T00:00:00+09:00')}
+        initialSchedule={{}}
+        onSave={vi.fn()}
+      />
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: '4週間をカレンダー入力' }))
+    await waitFor(() =>
+      expect(document.querySelectorAll('[id^="schedule-edit-day-"]')).toHaveLength(28)
+    )
+    const firstCard = document.querySelector('[id^="schedule-edit-day-"]') as HTMLElement
+    expect(within(firstCard).getByRole('combobox', { name: '勤務状況' })).toHaveTextContent(
+      '未入力'
+    )
+  })
+
+  it('creates a time-named template without asking for a template name', async () => {
+    const user = userEvent.setup({ pointerEventsCheck: 0 })
+    render(
+      <ScheduleEditDialog
+        open
+        onOpenChange={vi.fn()}
+        castName="明里"
+        castId="cast-1"
+        startDate={new Date('2026-08-10T00:00:00+09:00')}
+        initialSchedule={{}}
+        onSave={vi.fn()}
+      />
+    )
+
+    expect(screen.queryByLabelText('このキャストの出勤テンプレート名')).not.toBeInTheDocument()
+    await user.click(screen.getByRole('combobox', { name: 'テンプレート開始時間' }))
+    await user.click(await screen.findByRole('option', { name: '12:00' }))
+    await user.click(screen.getByRole('combobox', { name: 'テンプレート終了時間' }))
+    await user.click(await screen.findByRole('option', { name: '22:00' }))
+    await user.click(screen.getByRole('button', { name: 'この時間をテンプレート保存' }))
+
+    await waitFor(() =>
+      expect(fetch).toHaveBeenCalledWith(
+        '/api/cast',
+        expect.objectContaining({ method: 'PUT', body: expect.stringContaining('12:00-22:00') })
+      )
+    )
+  })
+
+  it('edits media text and internal notes as separate one-line fields', () => {
+    render(
+      <ScheduleEditDialog
+        open
+        onOpenChange={vi.fn()}
+        castName="明里"
+        castId="cast-1"
+        startDate={new Date('2026-08-10T00:00:00+09:00')}
+        initialSchedule={{}}
+        onSave={vi.fn()}
+      />
+    )
+
+    const firstCard = document.querySelector('[id^="schedule-edit-day-"]') as HTMLElement
+    expect(within(firstCard).getByLabelText('媒体用テキスト')).toHaveAttribute('type', 'text')
+    expect(within(firstCard).getByLabelText('備考')).toHaveAttribute('type', 'text')
   })
 
   it('shows each saved template delete control once instead of repeating it for every day', async () => {

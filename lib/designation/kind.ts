@@ -5,7 +5,7 @@
  */
 import type { DesignationFee } from './types'
 
-export const DESIGNATION_FEE_KINDS = ['free', 'repeat', 'panel', 'other'] as const
+export const DESIGNATION_FEE_KINDS = ['free', 'repeat', 'panel', 'recommend', 'other'] as const
 
 export type DesignationFeeKind = (typeof DESIGNATION_FEE_KINDS)[number]
 
@@ -41,6 +41,9 @@ export function inferDesignationKindFromName(name: string | null | undefined): D
   if (normalized === 'パネル指名' || normalized === 'panel' || normalized === 'panel-designation') {
     return 'panel'
   }
+  if (normalized === 'おすすめP指名') {
+    return 'recommend'
+  }
   return 'other'
 }
 
@@ -68,7 +71,7 @@ export function classifyDesignationType(
   kind?: DesignationFeeKind | null
 ): DesignationCategory {
   if (kind === 'repeat') return 'regular'
-  if (kind === 'free' || kind === 'panel' || kind === 'other') return 'free'
+  if (kind === 'free' || kind === 'panel' || kind === 'recommend' || kind === 'other') return 'free'
 
   const normalized = value?.trim()
   if (!normalized) return 'none'

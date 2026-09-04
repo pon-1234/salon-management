@@ -21,5 +21,6 @@ describe('designation fee presets', () => {
       expect(source).toContain(`price: ${price}`)
     }
     expect(source).toContain('標準ランクを一括追加')
+    expect(source).toContain('hasMissingStandardRanks &&')
   })
 })

@@ -86,7 +86,7 @@ describe('classifyDesignationType', () => {
   })
 
   it('exposes the supported kind list for settings and API validation', () => {
-    expect(DESIGNATION_FEE_KINDS).toEqual(['free', 'repeat', 'panel', 'other'])
+    expect(DESIGNATION_FEE_KINDS).toEqual(['free', 'repeat', 'panel', 'recommend', 'other'])
   })
 })
 

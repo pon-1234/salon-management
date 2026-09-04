@@ -126,6 +126,7 @@ import {
 } from '@/components/reservation/quick-booking.utils'
 import { buildStoreScopedEndpoint } from '@/lib/store/endpoints'
 import { useHotelOptions } from '@/components/reservation/use-hotel-options'
+import { isVisibleReservationOption } from '@/lib/options/visibility'
 
 const MAX_LINE_MESSAGE_LENGTH = 1000
 
@@ -499,15 +500,17 @@ export function ReservationDialog({
 
   const optionCatalog = useMemo(
     () =>
-      (optionPrices.length > 0 ? optionPrices : options).map((option: any) => ({
-        id: String(option.id),
-        name: option.name,
-        price: toNumber(option.price, 0),
-        duration: toNumber(option.duration, 0),
-        note: option.note ?? option.description ?? '',
-        storeShare: toNullableNumber(option.storeShare),
-        castShare: toNullableNumber(option.castShare),
-      })),
+      (optionPrices.length > 0 ? optionPrices : options)
+        .filter(isVisibleReservationOption)
+        .map((option: any) => ({
+          id: String(option.id),
+          name: option.name,
+          price: toNumber(option.price, 0),
+          duration: toNumber(option.duration, 0),
+          note: option.note ?? option.description ?? '',
+          storeShare: toNullableNumber(option.storeShare),
+          castShare: toNullableNumber(option.castShare),
+        })),
     [optionPrices, options]
   )
 

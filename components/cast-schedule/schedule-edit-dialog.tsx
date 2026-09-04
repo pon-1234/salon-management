@@ -21,7 +21,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { Calendar, Save, X, Clock, User } from 'lucide-react'
 import {
@@ -53,6 +52,7 @@ export interface DaySchedule {
   startTime?: string // HH:mm format
   endTime?: string // HH:mm format
   note?: string
+  mediaText?: string
   isAvailable?: boolean
 }
 
@@ -96,7 +96,6 @@ export function ScheduleEditDialog({
   const [templates, setTemplates] = useState<CastShiftTemplate[]>(() =>
     mergeCastShiftTemplates(null)
   )
-  const [newTemplateName, setNewTemplateName] = useState('')
   const [templateStartTime, setTemplateStartTime] = useState('')
   const [templateEndTime, setTemplateEndTime] = useState('')
   const [editSpan, setEditSpan] = useState<ScheduleEditSpan>('week')
@@ -109,6 +108,7 @@ export function ScheduleEditDialog({
         startTime: status.startTime,
         endTime: status.endTime,
         note: status.note,
+        mediaText: status.mediaText,
         isAvailable: status.isAvailable !== false,
       }
     })
@@ -143,12 +143,12 @@ export function ScheduleEditDialog({
         startTime: status.startTime,
         endTime: status.endTime,
         note: status.note,
+        mediaText: status.mediaText,
         isAvailable: status.isAvailable !== false,
       }
     })
     setSchedule(converted)
     setEditSpan('week')
-    setNewTemplateName('')
     setTemplateStartTime('')
     setTemplateEndTime('')
   }, [castId, open, initialSchedule])
@@ -270,10 +270,11 @@ export function ScheduleEditDialog({
                 startTime: formatInTimeZone(new Date(record.startTime), timeZone, 'HH:mm'),
                 endTime: formatInTimeZone(new Date(record.endTime), timeZone, 'HH:mm'),
                 note: record.notes ?? undefined,
+                mediaText: record.mediaText ?? undefined,
                 isAvailable: record.isAvailable !== false,
               }
             } else if (!next[dateKey]) {
-              next[dateKey] = { date: dateKey, status: '休日' }
+              next[dateKey] = { date: dateKey, status: '未入力' }
             }
           }
           return next
@@ -399,10 +400,10 @@ export function ScheduleEditDialog({
   }
 
   const saveCurrentDayAsTemplate = () => {
-    if (!templateStartTime || !templateEndTime || !newTemplateName.trim()) {
+    if (!templateStartTime || !templateEndTime) {
       toast({
-        title: 'テンプレート名と出勤時間を確認してください',
-        description: 'テンプレート名と開始・終了時間を入力してください。',
+        title: '出勤時間を確認してください',
+        description: '開始・終了時間を入力してください。',
         variant: 'destructive',
       })
       return
@@ -420,14 +421,13 @@ export function ScheduleEditDialog({
       ...templates.filter((template) => template.id !== 'holiday'),
       {
         id: `custom-${Date.now()}`,
-        name: newTemplateName.trim(),
+        name: `${templateStartTime}-${templateEndTime}`,
         startTime: templateStartTime,
         endTime: templateEndTime,
         isHoliday: false,
       },
       createHolidayTemplate(),
     ]
-    setNewTemplateName('')
     setTemplateStartTime('')
     setTemplateEndTime('')
     void persistTemplates(next)
@@ -456,11 +456,20 @@ export function ScheduleEditDialog({
         className="max-h-[90vh] max-w-4xl overflow-y-auto"
         aria-describedby={undefined}
       >
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <User className="h-5 w-5" />
-            {castName} - スケジュール編集
-          </DialogTitle>
+        <DialogHeader
+          data-testid="schedule-sticky-header"
+          className="sticky top-0 z-30 border-b bg-background pb-3"
+        >
+          <div className="flex items-center justify-between gap-3">
+            <DialogTitle className="flex items-center gap-2">
+              <User className="h-5 w-5" />
+              {castName} - スケジュール編集
+            </DialogTitle>
+            <Button onClick={handleSave} className="bg-emerald-600 hover:bg-emerald-700">
+              <Save className="mr-2 h-4 w-4" />
+              保存
+            </Button>
+          </div>
           <p className="text-sm text-muted-foreground">
             {formatInTimeZone(weekStart, timeZone, 'yyyy年M月d日', { locale: ja })} 〜{' '}
             {formatInTimeZone(visibleDays[visibleDays.length - 1], timeZone, 'M月d日', {
@@ -470,12 +479,6 @@ export function ScheduleEditDialog({
         </DialogHeader>
 
         <div className="space-y-2">
-          <div className="sticky top-0 z-30 flex justify-end border-b bg-background py-2">
-            <Button onClick={handleSave} className="bg-emerald-600 hover:bg-emerald-700">
-              <Save className="mr-2 h-4 w-4" />
-              保存
-            </Button>
-          </div>
           <Button
             type="button"
             variant={editSpan === 'fourWeeks' ? 'default' : 'outline'}
@@ -485,16 +488,10 @@ export function ScheduleEditDialog({
           >
             4週間をカレンダー入力
           </Button>
+          <p className="text-xs text-muted-foreground">
+            開始・終了時間の組み合わせを、このキャスト専用のテンプレートとして保存できます。
+          </p>
           <div className="flex flex-wrap items-end gap-2">
-            <div className="min-w-[12rem] flex-1">
-              <Label htmlFor="new-shift-template-name">このキャストの出勤テンプレート名</Label>
-              <Input
-                id="new-shift-template-name"
-                value={newTemplateName}
-                onChange={(event) => setNewTemplateName(event.target.value)}
-                placeholder="例: 昼勤 12:00-22:00"
-              />
-            </div>
             <div>
               <Label htmlFor="shift-template-start-time">テンプレート開始時間</Label>
               <Select value={templateStartTime} onValueChange={setTemplateStartTime}>
@@ -582,8 +579,8 @@ export function ScheduleEditDialog({
                 id={`schedule-edit-day-${dateKey}`}
                 className="border-l-4 border-l-emerald-500"
               >
-                <CardHeader className="pb-3">
-                  <CardTitle className="flex flex-col gap-3 text-lg sm:flex-row sm:items-start sm:justify-between">
+                <CardHeader className="p-3 pb-2">
+                  <CardTitle className="flex flex-col gap-2 text-base sm:flex-row sm:items-start sm:justify-between">
                     <div className="flex items-center gap-3">
                       <Calendar className="h-5 w-5" />
                       {formatInTimeZone(date, timeZone, 'M月d日(E)', { locale: ja })}
@@ -608,7 +605,7 @@ export function ScheduleEditDialog({
                     </div>
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-2 p-3 pt-0">
                   {/* ステータス選択 */}
                   <div>
                     <Label
@@ -720,13 +717,40 @@ export function ScheduleEditDialog({
 
                   {/* 備考 */}
                   <div>
-                    <Label className="mb-2 block text-sm font-medium">媒体用テキスト・備考</Label>
-                    <Textarea
-                      value={daySchedule.note || ''}
-                      onChange={(e) => handleScheduleChange(dateKey, 'note', e.target.value)}
-                      placeholder="特記事項があれば入力してください..."
-                      className="min-h-[60px]"
-                    />
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      <div>
+                        <Label
+                          htmlFor={`schedule-media-${dateKey}`}
+                          className="mb-1 block text-sm font-medium"
+                        >
+                          媒体用テキスト
+                        </Label>
+                        <Input
+                          id={`schedule-media-${dateKey}`}
+                          type="text"
+                          value={daySchedule.mediaText || ''}
+                          onChange={(e) =>
+                            handleScheduleChange(dateKey, 'mediaText', e.target.value)
+                          }
+                          placeholder="媒体へ掲載する一文"
+                        />
+                      </div>
+                      <div>
+                        <Label
+                          htmlFor={`schedule-note-${dateKey}`}
+                          className="mb-1 block text-sm font-medium"
+                        >
+                          備考
+                        </Label>
+                        <Input
+                          id={`schedule-note-${dateKey}`}
+                          type="text"
+                          value={daySchedule.note || ''}
+                          onChange={(e) => handleScheduleChange(dateKey, 'note', e.target.value)}
+                          placeholder="店舗内の備考"
+                        />
+                      </div>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -734,14 +758,10 @@ export function ScheduleEditDialog({
           })}
         </div>
 
-        <div className="sticky bottom-0 z-30 flex justify-end gap-4 border-t bg-background py-4">
+        <div className="flex justify-end gap-4 border-t bg-background py-4">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             <X className="mr-2 h-4 w-4" />
             キャンセル
-          </Button>
-          <Button onClick={handleSave} className="bg-emerald-600 hover:bg-emerald-700">
-            <Save className="mr-2 h-4 w-4" />
-            保存
           </Button>
         </div>
       </DialogContent>

@@ -31,4 +31,12 @@ describe('CastManagePage LINE registration integration', () => {
     expect(source).toContain('<TabsContent value="profile"')
     expect(source).toContain('<PublicProfileForm')
   })
+
+  it('separates basic data from the public profile and exposes contact actions', () => {
+    expect(source).toContain('基本情報編集')
+    expect(source).toContain('公開プロフィール・画像設定')
+    expect(source).toContain('getCastVerificationWarnings')
+    expect(source).toContain('電話をかける')
+    expect(source).toContain('チャットを開く')
+  })
 })

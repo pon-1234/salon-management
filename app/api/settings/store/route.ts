@@ -24,7 +24,7 @@ import {
 const mediaAccountSchema = z.object({
   id: z.string().trim().min(1),
   name: z.string().trim().min(1),
-  category: z.enum(['sales', 'recruitment']),
+  category: z.enum(['sales', 'recruitment', 'store']),
   publicUrl: z.preprocess(normalizeOptionalUrl, z.string().url().optional()),
   adminUrl: z.preprocess(normalizeOptionalUrl, z.string().url().optional()),
   loginId: z.string().optional(),
