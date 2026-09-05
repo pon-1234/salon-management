@@ -388,6 +388,21 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json(sanitizePricingResponse(existingCourse))
     }
 
+    if (Object.keys(sanitizedPayload).every((key) => key === 'displayOrder')) {
+      if (!existingCourse.isActive || existingCourse.archivedAt !== null) {
+        return NextResponse.json(
+          { error: 'コース情報が変更されています。再読み込みしてください。' },
+          { status: 409 }
+        )
+      }
+      const reorderedCourse = await db.coursePrice.update({
+        where: { id, storeId, isActive: true, archivedAt: null },
+        data: { displayOrder: sanitizedPayload.displayOrder },
+        include: { reservations: true },
+      })
+      return NextResponse.json(sanitizePricingResponse(reorderedCourse))
+    }
+
     const updatedCourse = await db.$transaction(async (tx) => {
       await tx.coursePrice.update({
         where: { id },

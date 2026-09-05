@@ -98,6 +98,7 @@ export default function CourseInfoPage() {
   const { currentStore } = useStore()
   const [courses, setCourses] = useState<CoursePrice[]>([])
   const [loading, setLoading] = useState(true)
+  const [reordering, setReordering] = useState(false)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingCourse, setEditingCourse] = useState<CoursePrice | null>(null)
   const [formData, setFormData] = useState<CourseFormState>({
@@ -255,11 +256,13 @@ export default function CourseInfoPage() {
   }
 
   const handleMoveCourse = async (id: string, direction: 'up' | 'down') => {
+    if (reordering) return
     const next = moveCatalogItem(sortedCourses, id, direction)
     if (next.every((course, index) => course.id === sortedCourses[index]?.id)) return
+    setReordering(true)
     setCourses(next)
     try {
-      await Promise.all(
+      const updates = await Promise.allSettled(
         next.map((course) =>
           pricingUseCases.updateCourse(
             course.id,
@@ -268,10 +271,15 @@ export default function CourseInfoPage() {
           )
         )
       )
+      if (updates.some((update) => update.status === 'rejected')) {
+        throw new Error('Course order update failed')
+      }
       toast({ title: '更新完了', description: 'コースの表示順を更新しました' })
     } catch {
       await loadCourses()
       toast({ title: 'エラー', description: '表示順の更新に失敗しました', variant: 'destructive' })
+    } finally {
+      setReordering(false)
     }
   }
 
@@ -403,7 +411,7 @@ export default function CourseInfoPage() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            disabled={index === 0}
+                            disabled={reordering || index === 0}
                             onClick={() => handleMoveCourse(course.id, 'up')}
                             aria-label={`${course.name}を上へ移動`}
                           >
@@ -412,7 +420,7 @@ export default function CourseInfoPage() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            disabled={index === sortedCourses.length - 1}
+                            disabled={reordering || index === sortedCourses.length - 1}
                             onClick={() => handleMoveCourse(course.id, 'down')}
                             aria-label={`${course.name}を下へ移動`}
                           >

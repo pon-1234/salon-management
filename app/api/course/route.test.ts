@@ -491,6 +491,77 @@ describe('PUT /api/course', () => {
     } as any)
   })
 
+  it('keeps course IDs and historical references stable across consecutive order-only updates', async () => {
+    const original = {
+      id: 'course-order',
+      name: 'Course',
+      storeId: 'ikebukuro',
+      displayOrder: 2,
+      isActive: true,
+      archivedAt: null,
+      price: 10000,
+      duration: 60,
+      storeShare: 5000,
+      castShare: 5000,
+      description: '',
+      enableWebBooking: true,
+      reservations: [],
+    }
+    vi.mocked(db.coursePrice.findFirst).mockResolvedValue(original)
+    vi.mocked(db.coursePrice.create).mockResolvedValue({
+      ...original,
+      id: 'unwanted-version',
+    })
+    vi.mocked(db.coursePrice.update)
+      .mockResolvedValueOnce({ ...original, displayOrder: 0 })
+      .mockResolvedValueOnce({ ...original, displayOrder: 3 })
+    for (const displayOrder of [0, 3]) {
+      const response = await PUT(
+        new NextRequest('http://localhost/api/course', {
+          method: 'PUT',
+          body: JSON.stringify({ id: original.id, displayOrder }),
+        })
+      )
+      expect(response.status).toBe(200)
+      expect(await response.json()).toMatchObject({
+        id: original.id,
+        displayOrder,
+        isActive: true,
+        archivedAt: null,
+      })
+    }
+    expect(db.coursePrice.create).not.toHaveBeenCalled()
+    expect(vi.mocked(db.coursePrice.update).mock.calls.map(([args]) => args.data)).toEqual([
+      { displayOrder: 0 },
+      { displayOrder: 3 },
+    ])
+    expect(db.coursePrice.update).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        where: { id: original.id, storeId: 'ikebukuro', isActive: true, archivedAt: null },
+        data: { displayOrder: 3 },
+      })
+    )
+  })
+
+  it('rejects an order-only update to an archived course without creating an active copy', async () => {
+    vi.mocked(db.coursePrice.findFirst).mockResolvedValue({
+      id: 'archived',
+      storeId: 'ikebukuro',
+      isActive: false,
+      archivedAt: new Date(),
+      reservations: [],
+    } as any)
+    const response = await PUT(
+      new NextRequest('http://localhost/api/course', {
+        method: 'PUT',
+        body: JSON.stringify({ id: 'archived', displayOrder: 0 }),
+      })
+    )
+    expect(response.status).toBe(409)
+    expect(db.coursePrice.create).not.toHaveBeenCalled()
+    expect(db.coursePrice.update).not.toHaveBeenCalled()
+  })
+
   it('should require ID field', async () => {
     const request = new NextRequest('http://localhost:3000/api/course', {
       method: 'PUT',
