@@ -46,7 +46,7 @@ export function assertProfileRefreshEnvironment(env: Record<string, string | und
     databaseName: 'salon_uat_preview',
     marker: env.PREVIEW_TARGET_ID,
     secret: env.NEXTAUTH_SECRET,
-    targetRoot: env.STORAGE_ROOT,
+    targetRoot: `${env.STORAGE_ROOT}/images`,
   }
 }
 export async function verifyProfileRefreshTarget(

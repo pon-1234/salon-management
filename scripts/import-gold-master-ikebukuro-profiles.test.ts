@@ -26,7 +26,10 @@ it('ships the import command and media encryption dependencies in the runtime im
   )
 })
 it('rejects production targets, outbound delivery, and absent secret before importing', () => {
-  expect(assertProfileRefreshEnvironment(env)).toMatchObject({ databaseName: 'salon_uat_preview' })
+  expect(assertProfileRefreshEnvironment(env)).toMatchObject({
+    databaseName: 'salon_uat_preview',
+    targetRoot: '/var/lib/salon-preview-storage/images',
+  })
   for (const change of [
     { APP_RUNTIME_MODE: 'production' },
     { OUTBOUND_DELIVERY_MODE: 'live' },
