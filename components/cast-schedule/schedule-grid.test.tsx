@@ -3,7 +3,7 @@
  * @related_to   ScheduleGrid and ScheduleEditDialog
  * @known_issues None
  */
-import { fireEvent, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { CastScheduleEntry } from '@/lib/cast-schedule/old-types'
 import { ScheduleGrid } from './schedule-grid'
@@ -88,7 +88,7 @@ describe('ScheduleGrid', () => {
       expect(screen.getByTestId('schedule-scrollport')).toHaveClass('h-full', 'overflow-auto')
       expect(screen.getByTestId('schedule-scrollport')).not.toHaveClass('max-h-[calc(100vh-12rem)]')
       expect(dateHeader.closest('[data-testid="schedule-date-header"]')).toHaveClass('sticky')
-      expect(screen.getByRole('rowheader')).toHaveClass('min-w-[320px]')
+      expect(screen.getByRole('rowheader')).toHaveClass('min-w-[240px]')
       expect(screen.getByRole('columnheader', { name: /08\/10/ })).toHaveTextContent('出勤 1名')
 
       fireEvent.click(dateHeader)
@@ -121,4 +121,23 @@ describe('ScheduleGrid', () => {
 
     expect(screen.getByText('条件に一致するキャストはいません')).toBeInTheDocument()
   })
+})
+
+it('keeps the selected editor open after its save callback resolves', async () => {
+  const onSaveSchedule = vi.fn().mockResolvedValue(undefined)
+  render(
+    <ScheduleGrid
+      startDate={new Date('2026-08-10T00:00:00+09:00')}
+      entries={[entry]}
+      onSaveSchedule={onSaveSchedule}
+    />
+  )
+  fireEvent.click(screen.getByText('出勤予定'))
+  const props = editDialogMock.mock.lastCall?.[0] as {
+    onSave: (id: string, schedule: {}) => Promise<void>
+  }
+  await act(async () => {
+    await props.onSave('cast-1', {})
+  })
+  expect(screen.getByTestId('schedule-edit-dialog')).toBeInTheDocument()
 })

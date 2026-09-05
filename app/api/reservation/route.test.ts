@@ -1561,14 +1561,18 @@ describe('Reservation API - Modifiable Status', () => {
       )
     })
 
-    it('derives a customer regular-designation fee from the selected cast', async () => {
+    it.each([
+      { castFee: null, storeFee: 2000 },
+      { castFee: 9000, storeFee: 2000 },
+      { castFee: 9000, storeFee: null },
+    ])('uses the store regular-designation fee: %j', async ({ castFee, storeFee }) => {
       vi.mocked(getServerSession).mockResolvedValue({
         user: { id: 'cust-123', role: 'customer' },
       } as any)
       vi.mocked(db.cast.findFirst).mockResolvedValue({
         id: 'cast-123',
         welfareExpenseRate: null,
-        regularDesignationFee: 2000,
+        regularDesignationFee: castFee,
         specialDesignationFee: 5000,
         netReservation: true,
       } as any)
@@ -1580,6 +1584,11 @@ describe('Reservation API - Modifiable Status', () => {
         course: { id: 'course-123', name: 'Test Course' },
         options: [],
       }))
+      const findDesignationFee = vi
+        .fn()
+        .mockImplementation(async ({ where }) =>
+          where.kind === 'repeat' && storeFee !== null ? { price: storeFee } : null
+        )
       vi.mocked(db.$transaction).mockImplementation(async (callback) =>
         callback({
           reservation: {
@@ -1587,7 +1596,7 @@ describe('Reservation API - Modifiable Status', () => {
             create: createReservation,
           },
           designationFee: {
-            findFirst: vi.fn().mockResolvedValue(null),
+            findFirst: findDesignationFee,
           },
         } as any)
       )
@@ -1605,6 +1614,16 @@ describe('Reservation API - Modifiable Status', () => {
 
       const response = await POST(request)
 
+      expect(findDesignationFee).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { storeId: 'ikebukuro', kind: 'repeat', isActive: true, isTakeHomeBonus: false },
+        })
+      )
+      if (storeFee === null) {
+        expect(response.status).toBe(400)
+        expect(createReservation).not.toHaveBeenCalled()
+        return
+      }
       expect(response.status).toBe(201)
       expect(createReservation).toHaveBeenCalledWith(
         expect.objectContaining({

@@ -307,3 +307,37 @@ describe('POST /api/cast-schedule/batch', () => {
     expect(db.$transaction).not.toHaveBeenCalled()
   })
 })
+
+it('persists an explicit unset state with internal notes and no public availability', async () => {
+  vi.mocked(getServerSession).mockResolvedValue({
+    user: { id: 'admin-1', role: 'admin', permissions: ['*'] },
+  } as never)
+  vi.mocked(db.cast.findFirst).mockResolvedValue({ id: 'cast-1', storeId: 'store-a' } as never)
+  const update = vi.fn().mockResolvedValue({ id: 'schedule-1' })
+  vi.mocked(db.$transaction).mockImplementation(async (callback: any) =>
+    callback({
+      castSchedule: { findUnique: vi.fn().mockResolvedValue({ id: 'schedule-1' }), update },
+    })
+  )
+  const response = await POST(
+    new NextRequest('http://localhost:3000/api/cast-schedule/batch?storeId=store-a', {
+      method: 'POST',
+      body: JSON.stringify({
+        castId: 'cast-1',
+        schedules: [
+          { date: '2026-09-08', status: 'unset', note: '時間を確認中', mediaText: '未定' },
+        ],
+      }),
+    })
+  )
+  expect(response.status).toBe(200)
+  expect(update).toHaveBeenCalledWith({
+    where: { id: 'schedule-1' },
+    data: expect.objectContaining({
+      status: '未入力',
+      isAvailable: false,
+      notes: '時間を確認中',
+      mediaText: '未定',
+    }),
+  })
+})

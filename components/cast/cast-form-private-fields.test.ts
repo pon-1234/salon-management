@@ -27,7 +27,7 @@ describe('cast information boundaries', () => {
     ]) {
       expect(formSource).toContain(label)
     }
-    expect(apiSource).toContain("default('active')")
+    expect(apiSource).toContain("default('provisional')")
   })
 
   it('keeps height, measurements, type, copy, options, and images in the public form only', () => {

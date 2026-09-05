@@ -3,7 +3,7 @@
  * @related_to   WeeklySchedulePage and ScheduleActionButtons controlled filters
  * @known_issues None
  */
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import type {
@@ -16,6 +16,7 @@ import WeeklySchedulePage from './page'
 const mocks = vi.hoisted(() => ({
   getWeeklySchedule: vi.fn(),
   switchStore: vi.fn(),
+  gridProps: vi.fn(),
   stores: [
     {
       id: 'ikebukuro',
@@ -105,19 +106,27 @@ vi.mock('@/components/cast-schedule/schedule-grid', () => ({
     entries,
     viewMode,
     className,
+    onSaveSchedule,
   }: {
+    onSaveSchedule: (
+      id: string,
+      schedule: Record<string, { date: string; status: '休日' }>
+    ) => Promise<void>
     entries: CastScheduleEntry[]
     viewMode: 'grid' | 'list'
     className?: string
-  }) => (
-    <div data-testid="schedule-results" data-view-mode={viewMode} className={className}>
-      {entries.length === 0 ? (
-        <span>条件に一致するキャストはいません</span>
-      ) : (
-        entries.map((entry) => <span key={entry.castId}>{entry.name}</span>)
-      )}
-    </div>
-  ),
+  }) => {
+    mocks.gridProps(onSaveSchedule)
+    return (
+      <div data-testid="schedule-results" data-view-mode={viewMode} className={className}>
+        {entries.length === 0 ? (
+          <span>条件に一致するキャストはいません</span>
+        ) : (
+          entries.map((entry) => <span key={entry.castId}>{entry.name}</span>)
+        )}
+      </div>
+    )
+  },
 }))
 
 const WEEK_DATES = [
@@ -258,4 +267,39 @@ describe('WeeklySchedulePage filters', () => {
       expect.objectContaining({ storeId: 'shinjuku', castFilter: 'all' })
     )
   })
+})
+
+describe('WeeklySchedulePage save outcomes', () => {
+  beforeEach(() => {
+    mocks.getWeeklySchedule.mockResolvedValue(makeSchedule('ikebukuro'))
+  })
+  it('propagates save failure without removing the editor tree or refreshing away edits', async () => {
+    global.fetch = vi
+      .fn()
+      .mockResolvedValue({ ok: false, json: async () => ({ error: '保存エラー' }) })
+    render(<WeeklySchedulePage />)
+    await screen.findByTestId('schedule-results')
+    const save = mocks.gridProps.mock.lastCall![0]
+    await act(async () => {
+      await expect(
+        save('working-cast', { '2026-08-10': { date: '2026-08-10', status: '休日' } })
+      ).rejects.toThrow('保存エラー')
+    })
+    expect(screen.getByTestId('schedule-results')).toBeInTheDocument()
+  })
+})
+
+it('refreshes totals after saving without replacing the open editor tree with a loader', async () => {
+  mocks.getWeeklySchedule.mockReset().mockResolvedValue(makeSchedule('ikebukuro'))
+  global.fetch = vi
+    .fn()
+    .mockResolvedValue({ ok: true, json: async () => ({ message: '保存しました' }) })
+  render(<WeeklySchedulePage />)
+  await screen.findByTestId('schedule-results')
+  const save = mocks.gridProps.mock.lastCall![0]
+  await act(async () => {
+    await save('working-cast', { '2026-08-10': { date: '2026-08-10', status: '休日' } })
+  })
+  expect(mocks.getWeeklySchedule).toHaveBeenCalledTimes(2)
+  expect(screen.getByTestId('schedule-results')).toBeInTheDocument()
 })

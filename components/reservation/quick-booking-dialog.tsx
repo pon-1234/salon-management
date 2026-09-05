@@ -805,9 +805,14 @@ export function QuickBookingDialog({
     const castTakeHomeBonus =
       selectedDesignationKind === 'repeat'
         ? (currentStaff?.regularTakeHomeBonus ?? 0)
-        : selectedDesignationKind === 'panel' || selectedDesignationKind === 'other'
+        : selectedDesignationKind === 'panel'
           ? (currentStaff?.panelTakeHomeBonus ?? 0)
-          : 0
+          : selectedDesignationKind === 'recommend'
+            ? (currentStaff?.recommendedTakeHomeBonus ?? 0)
+            : selectedDesignationKind === 'free' ||
+                (!selectedDesignationKind && designationType === 'none')
+              ? (currentStaff?.freeTakeHomeBonus ?? 0)
+              : 0
 
     const revenueInput = {
       basePrice,

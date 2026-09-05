@@ -69,7 +69,7 @@ const castSchema = z.object({
   panelDesignationRank: z.coerce.number().int().min(0).optional().default(0),
   regularDesignationRank: z.coerce.number().int().min(0).optional().default(0),
   workStatus: z.string().optional().default('出勤'),
-  employmentStatus: z.enum(['provisional', 'active', 'retired']).optional().default('active'),
+  employmentStatus: z.enum(['provisional', 'active', 'retired']).optional().default('provisional'),
   phone: z.string().trim().max(30).nullable().optional(),
   birthDate: z.coerce.date().nullable().optional(),
   blogWidget: z.string().max(5000).nullable().optional(),
@@ -217,6 +217,14 @@ async function designationTiersBelongToStore(
   selection: CastDesignationTierSelection,
   storeId: string
 ): Promise<boolean> {
+  const selectedIds = [
+    selection.specialDesignationFeeId,
+    selection.panelTakeHomeBonusId,
+    selection.freeTakeHomeBonusId,
+    selection.recommendedTakeHomeBonusId,
+    selection.regularTakeHomeBonusId,
+  ].filter((id): id is string => Boolean(id))
+  if (new Set(selectedIds).size !== selectedIds.length) return false
   const expectedKinds = new Map<string, ReadonlySet<string>>()
   if (selection.specialDesignationFeeId) {
     expectedKinds.set(selection.specialDesignationFeeId, new Set(['other']))
@@ -243,12 +251,18 @@ async function designationTiersBelongToStore(
       storeId,
       isActive: true,
     },
-    select: { id: true, kind: true },
+    select: { id: true, kind: true, isTakeHomeBonus: true },
   })
 
   return (
     tiers.length === expectedKinds.size &&
-    tiers.every((tier) => expectedKinds.get(tier.id)?.has(tier.kind))
+    tiers.every(
+      (tier) =>
+        expectedKinds.get(tier.id)?.has(tier.kind) &&
+        (tier.id === selection.specialDesignationFeeId
+          ? !tier.isTakeHomeBonus
+          : tier.isTakeHomeBonus)
+    )
   )
 }
 

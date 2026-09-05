@@ -61,3 +61,18 @@ describe('buildScheduleBatchPayload', () => {
     ])
   })
 })
+
+it('preserves notes on holidays and explicit resets to unset', () => {
+  expect(
+    buildScheduleBatchPayload(
+      {
+        '2026-09-07': { status: '休日', note: '内部の備考', mediaText: '媒体用の一文' },
+        '2026-09-08': { status: '未入力', note: '時間は確認中' },
+      },
+      { includeUnset: true }
+    )
+  ).toEqual([
+    { date: '2026-09-07', status: 'holiday', note: '内部の備考', mediaText: '媒体用の一文' },
+    { date: '2026-09-08', status: 'unset', note: '時間は確認中', mediaText: undefined },
+  ])
+})

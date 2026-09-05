@@ -24,7 +24,7 @@ import type { ScheduleViewMode } from './schedule-action-buttons'
 interface ScheduleGridProps {
   startDate: Date
   entries: CastScheduleEntry[]
-  onSaveSchedule?: (castId: string, schedule: WeeklyScheduleEdit) => void
+  onSaveSchedule?: (castId: string, schedule: WeeklyScheduleEdit) => void | Promise<void>
   viewMode?: ScheduleViewMode
   className?: string
 }
@@ -59,8 +59,6 @@ export function ScheduleGrid({
     if (onSaveSchedule) {
       await onSaveSchedule(castId, schedule)
     }
-    setEditDialogOpen(false)
-    setSelectedCast(null)
   }
 
   const renderScheduleCell = (
@@ -72,7 +70,7 @@ export function ScheduleGrid({
     if (!status) {
       return (
         <div
-          className={`group relative h-20 cursor-pointer rounded-lg border p-3 transition-all duration-200 hover:shadow-md ${
+          className={`group relative h-16 cursor-pointer rounded border p-1 transition-all duration-200 hover:shadow-md ${
             isToday ? 'border-blue-200 bg-blue-50' : 'border-gray-200 bg-gray-50 hover:bg-gray-100'
           }`}
           onClick={() => handleCellClick(entry, date)}
@@ -90,7 +88,7 @@ export function ScheduleGrid({
     if (status.type === '休日') {
       return (
         <div
-          className={`group relative h-20 cursor-pointer rounded-lg border p-3 transition-all duration-200 hover:shadow-md ${
+          className={`group relative h-16 cursor-pointer rounded border p-1 transition-all duration-200 hover:shadow-md ${
             isToday ? 'border-red-300 bg-red-50' : 'border-red-200 bg-red-50 hover:border-red-300'
           }`}
           onClick={() => handleCellClick(entry, date)}
@@ -109,7 +107,7 @@ export function ScheduleGrid({
       const isAttentionStatus = status.type === '遅刻' || status.type === '早退'
       return (
         <div
-          className={`group relative h-20 cursor-pointer rounded-lg border p-3 transition-all duration-200 hover:shadow-md ${
+          className={`group relative h-16 cursor-pointer rounded border p-1 transition-all duration-200 hover:shadow-md ${
             isToday
               ? 'border-emerald-300 bg-emerald-50'
               : isAttentionStatus
@@ -150,7 +148,7 @@ export function ScheduleGrid({
 
     return (
       <div
-        className={`group relative h-20 cursor-pointer rounded-lg border p-3 transition-all duration-200 hover:shadow-md ${
+        className={`group relative h-16 cursor-pointer rounded border p-1 transition-all duration-200 hover:shadow-md ${
           isToday ? 'border-blue-200 bg-blue-50' : 'border-gray-200 bg-gray-50 hover:bg-gray-100'
         }`}
         onClick={() => handleCellClick(entry, date)}
@@ -281,17 +279,17 @@ export function ScheduleGrid({
       >
         <div
           data-testid="schedule-date-header"
-          className="sticky top-0 z-20 bg-gray-50 px-4 pb-2 pt-4"
+          className="sticky top-0 z-20 bg-gray-50 px-2 pb-1 pt-1"
           role="rowgroup"
         >
           <Card className="bg-white shadow-sm">
-            <CardContent className="p-4">
+            <CardContent className="p-2">
               <div
-                className="grid min-w-[1240px] grid-cols-[320px_repeat(7,minmax(110px,1fr))] gap-4"
+                className="grid min-w-[1020px] grid-cols-[240px_repeat(7,minmax(100px,1fr))] gap-2"
                 role="row"
               >
                 <div
-                  className="sticky left-0 z-10 flex min-w-[320px] items-center justify-center bg-white"
+                  className="sticky left-0 z-10 flex min-w-[240px] items-center justify-center bg-white"
                   role="columnheader"
                 >
                   <span className="text-sm font-medium text-gray-600">キャスト</span>
@@ -321,12 +319,12 @@ export function ScheduleGrid({
                     >
                       <button
                         type="button"
-                        className="w-full rounded-md p-2 hover:bg-white/70"
+                        className="w-full rounded-md p-0.5 hover:bg-white/70"
                         aria-label={`${dateLabel}の列へ移動`}
                         onClick={() => scrollDateColumnIntoView(date)}
                       >
-                        <div className="text-lg font-semibold">{formatDisplayDate(date)}</div>
-                        <div className="text-sm">{formatDayOfWeek(date)}</div>
+                        <div className="text-sm font-semibold">{formatDisplayDate(date)}</div>
+                        <div className="text-xs">{formatDayOfWeek(date)}</div>
                         <div className="text-xs">出勤 {workingCount}名</div>
                       </button>
                     </div>
@@ -337,18 +335,18 @@ export function ScheduleGrid({
           </Card>
         </div>
 
-        <div className="space-y-4 px-4 pb-4" role="rowgroup">
+        <div className="space-y-1 px-2 pb-2" role="rowgroup">
           {entries.map((entry) => (
             <Card
               key={entry.castId}
               role="row"
               className="bg-white shadow-sm transition-shadow duration-200 hover:shadow-md"
             >
-              <CardContent className="p-4">
-                <div className="grid min-w-[1240px] grid-cols-[320px_repeat(7,minmax(110px,1fr))] items-center gap-4">
+              <CardContent className="p-2">
+                <div className="grid min-w-[1020px] grid-cols-[240px_repeat(7,minmax(100px,1fr))] items-center gap-2">
                   {/* Cast Info */}
                   <div
-                    className="sticky left-0 z-10 flex min-w-[320px] items-center gap-3 bg-white"
+                    className="sticky left-0 z-10 flex min-w-[240px] items-center gap-3 bg-white"
                     role="rowheader"
                   >
                     <Avatar className="h-12 w-12">

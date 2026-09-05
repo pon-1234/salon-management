@@ -322,55 +322,57 @@ export class CastScheduleUseCases {
     schedules: any[],
     weekStart: Date
   ): CastScheduleEntry[] {
-    return casts.map((cast) => {
-      // Find all schedules for this cast
-      const castSchedules = schedules.filter((s: any) => s.castId === cast.id)
+    return casts
+      .filter((cast) => cast.employmentStatus === 'active')
+      .map((cast) => {
+        // Find all schedules for this cast
+        const castSchedules = schedules.filter((s: any) => s.castId === cast.id)
 
-      // Create schedule object for the week
-      const weekSchedule: any = {}
+        // Create schedule object for the week
+        const weekSchedule: any = {}
 
-      // Initialize all days of the week
-      for (let i = 0; i < 7; i++) {
-        const date = addDays(weekStart, i)
-        const dateStr = formatInTimeZone(date, DEFAULT_TIME_ZONE, 'yyyy-MM-dd')
+        // Initialize all days of the week
+        for (let i = 0; i < 7; i++) {
+          const date = addDays(weekStart, i)
+          const dateStr = formatInTimeZone(date, DEFAULT_TIME_ZONE, 'yyyy-MM-dd')
 
-        // Find schedule for this specific date
-        const daySchedule = castSchedules.find((s: any) => {
-          const scheduleDate = new Date(s.date)
-          return formatInTimeZone(scheduleDate, DEFAULT_TIME_ZONE, 'yyyy-MM-dd') === dateStr
-        })
+          // Find schedule for this specific date
+          const daySchedule = castSchedules.find((s: any) => {
+            const scheduleDate = new Date(s.date)
+            return formatInTimeZone(scheduleDate, DEFAULT_TIME_ZONE, 'yyyy-MM-dd') === dateStr
+          })
 
-        if (daySchedule) {
-          // Parse times using utility function
-          const startTimeStr = parseTimeFromISO(daySchedule.startTime)
-          const endTimeStr = parseTimeFromISO(daySchedule.endTime)
+          if (daySchedule) {
+            // Parse times using utility function
+            const startTimeStr = parseTimeFromISO(daySchedule.startTime)
+            const endTimeStr = parseTimeFromISO(daySchedule.endTime)
 
-          weekSchedule[dateStr] = {
-            type: daySchedule.status ?? '出勤予定',
-            startTime: startTimeStr,
-            endTime: endTimeStr,
-            note: daySchedule.notes ?? undefined,
-            mediaText: daySchedule.mediaText ?? undefined,
-            isAvailable: daySchedule.isAvailable !== false,
+            weekSchedule[dateStr] = {
+              type: daySchedule.status ?? '出勤予定',
+              startTime: startTimeStr,
+              endTime: endTimeStr,
+              note: daySchedule.notes ?? undefined,
+              mediaText: daySchedule.mediaText ?? undefined,
+              isAvailable: daySchedule.isAvailable !== false,
+            }
+          } else {
+            weekSchedule[dateStr] = { type: '未入力' }
           }
-        } else {
-          weekSchedule[dateStr] = { type: '未入力' }
         }
-      }
 
-      return {
-        castId: cast.id,
-        name: cast.name,
-        nameKana: cast.nameKana || cast.name,
-        age: cast.age,
-        image: cast.image,
-        hasPhone: true,
-        hasBusinessContact: true,
-        designationRank:
-          cast.specialDesignationFeeLabel ?? cast.specialDesignationFeeTier?.name ?? null,
-        schedule: weekSchedule,
-      }
-    })
+        return {
+          castId: cast.id,
+          name: cast.name,
+          nameKana: cast.nameKana || cast.name,
+          age: cast.age,
+          image: cast.image,
+          hasPhone: true,
+          hasBusinessContact: true,
+          designationRank:
+            cast.specialDesignationFeeLabel ?? cast.specialDesignationFeeTier?.name ?? null,
+          schedule: weekSchedule,
+        }
+      })
   }
 
   private calculateWeeklyStats(entries: CastScheduleEntry[]): {

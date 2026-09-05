@@ -174,7 +174,14 @@ export function CastForm({
   const fieldId = (suffix: string) => `cast-${suffix}`
   useEffect(() => {
     let active = true
-    getDesignationFees({ storeId })
+    Promise.all([
+      getDesignationFees({ storeId }),
+      getDesignationFees({ storeId, takeHomeOnly: true }),
+    ])
+      .then((catalogs) => {
+        const fees = [...new Map(catalogs.flat().map((fee) => [fee.id, fee])).values()]
+        return fees
+      })
       .then((fees) => {
         if (active) setDesignationFees(fees.filter((fee) => fee.isActive))
       })
@@ -221,7 +228,7 @@ export function CastForm({
 
   const specialDesignationOptions = useMemo(() => {
     const options = designationFees.filter(
-      (fee) => resolveDesignationKind(fee) === 'other' && fee.price > 0
+      (fee) => !fee.isTakeHomeBonus && resolveDesignationKind(fee) === 'other' && fee.price > 0
     )
     const currentValue = Number(formData.specialDesignationFee || 0)
     if (currentValue > 0 && !options.some((fee) => fee.price === currentValue)) {
@@ -240,20 +247,30 @@ export function CastForm({
   }, [designationFees, formData.specialDesignationFee])
   const regularTakeHomeOptions = useMemo(
     () =>
-      designationFees.filter((fee) => resolveDesignationKind(fee) === 'repeat' && fee.price > 0),
+      designationFees.filter(
+        (fee) => fee.isTakeHomeBonus && resolveDesignationKind(fee) === 'repeat' && fee.price > 0
+      ),
     [designationFees]
   )
   const freeTakeHomeOptions = useMemo(
-    () => designationFees.filter((fee) => resolveDesignationKind(fee) === 'free' && fee.price > 0),
+    () =>
+      designationFees.filter(
+        (fee) => fee.isTakeHomeBonus && resolveDesignationKind(fee) === 'free' && fee.price > 0
+      ),
     [designationFees]
   )
   const panelTakeHomeOptions = useMemo(
-    () => designationFees.filter((fee) => resolveDesignationKind(fee) === 'panel' && fee.price > 0),
+    () =>
+      designationFees.filter(
+        (fee) => fee.isTakeHomeBonus && resolveDesignationKind(fee) === 'panel' && fee.price > 0
+      ),
     [designationFees]
   )
   const recommendedTakeHomeOptions = useMemo(
     () =>
-      designationFees.filter((fee) => resolveDesignationKind(fee) === 'recommend' && fee.price > 0),
+      designationFees.filter(
+        (fee) => fee.isTakeHomeBonus && resolveDesignationKind(fee) === 'recommend' && fee.price > 0
+      ),
     [designationFees]
   )
   const isDirty = useMemo(
@@ -821,6 +838,20 @@ export function CastForm({
             </p>
           </div>
         </div>
+        <p className="text-sm text-muted-foreground">
+          手取UPはキャストへの追加支給額です。お客様の料金は増えません。
+          <a
+            className="ml-2 text-emerald-700 underline"
+            href="/admin/settings/designation-fees#take-home-bonuses"
+            target="_blank"
+            rel="noreferrer"
+          >
+            手取UPの金額を管理する
+          </a>
+        </p>
+        <p className="text-sm text-muted-foreground">
+          本指名料金は店舗の指名料設定を使用します。キャストごとに本指名料金を入力する必要はありません。
+        </p>
         <div className="grid gap-6 md:grid-cols-2">
           <div className="space-y-2">
             <Label htmlFor={fieldId('specialDesignationFee')}>特別指名料ランク</Label>

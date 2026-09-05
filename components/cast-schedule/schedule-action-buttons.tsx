@@ -111,9 +111,9 @@ export function ScheduleActionButtons({
 
   return (
     <div className="border-b bg-white">
-      <div className="mx-auto max-w-7xl p-4">
-        <div className="mb-4 flex flex-col items-start justify-between gap-4 lg:flex-row lg:items-center">
-          <div className="flex flex-col items-start gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+      <div className="px-3 py-2">
+        <div className="mb-2 flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Select value={selectedStoreId} onValueChange={onStoreChange}>
               <SelectTrigger aria-label="店舗" className="h-9 w-[160px]">
                 <SelectValue placeholder="店舗を選択" />
@@ -127,7 +127,7 @@ export function ScheduleActionButtons({
               </SelectContent>
             </Select>
 
-            <div className="flex items-center gap-2 rounded-lg bg-gray-50 p-1">
+            <div className="flex flex-wrap items-center gap-1 rounded-lg bg-gray-50">
               <Button
                 variant="ghost"
                 size="sm"
@@ -152,7 +152,7 @@ export function ScheduleActionButtons({
               <Button
                 variant="outline"
                 size="sm"
-                className="h-10 px-3"
+                className="h-8 px-2"
                 onClick={() => onDateChange(new Date())}
               >
                 今日
@@ -160,7 +160,7 @@ export function ScheduleActionButtons({
               <Button
                 variant="outline"
                 size="sm"
-                className="h-10 px-3"
+                className="h-8 px-2"
                 onClick={() => onDateChange(addMonths(date, -1))}
               >
                 前の月
@@ -168,7 +168,7 @@ export function ScheduleActionButtons({
               <Button
                 variant="outline"
                 size="sm"
-                className="h-10 px-3"
+                className="h-8 px-2"
                 onClick={() => onDateChange(addMonths(date, 1))}
               >
                 次の月
@@ -176,7 +176,7 @@ export function ScheduleActionButtons({
               <input
                 type="date"
                 aria-label="出勤表の日付へ移動"
-                className="h-11 min-w-[12rem] rounded-md border border-input bg-background px-3 text-base"
+                className="h-8 w-36 rounded-md border border-input bg-background px-2 text-sm"
                 value={formatInTimeZone(date, timeZone, 'yyyy-MM-dd')}
                 onChange={(event) => {
                   if (!event.target.value) return
@@ -193,7 +193,7 @@ export function ScheduleActionButtons({
                 placeholder="キャスト名・読み仮名で検索..."
                 value={searchQuery}
                 onChange={(event) => onSearchQueryChange(event.target.value)}
-                className="h-9 w-[240px] pl-9"
+                className="h-8 w-[190px] pl-9"
               />
             </div>
           </div>
@@ -257,14 +257,14 @@ export function ScheduleActionButtons({
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-2" aria-label="五十音フィルター">
+        <div className="flex flex-wrap gap-1" aria-label="五十音フィルター">
           {CHARACTERS.map((character) => (
             <Button
               key={character}
               variant={characterFilter === character ? 'default' : 'outline'}
               size="sm"
               onClick={() => onCharacterFilterChange(character)}
-              className={`h-8 px-3 text-xs ${
+              className={`h-7 px-2 text-xs ${
                 characterFilter === character
                   ? 'bg-emerald-600 hover:bg-emerald-700'
                   : 'hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700'

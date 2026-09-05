@@ -90,6 +90,15 @@ function buildDesignationPayload(data: any, mode: 'create' | 'update' = 'create'
     )
   }
 
+  if (data.isTakeHomeBonus !== undefined) {
+    if (typeof data.isTakeHomeBonus !== 'boolean') throw new Error('BONUS_INVALID')
+    payload.isTakeHomeBonus = data.isTakeHomeBonus
+  }
+  if (payload.isTakeHomeBonus) {
+    if (payload.kind === 'other') throw new Error('KIND_INVALID')
+    payload.storeShare = 0
+    payload.castShare = 0
+  }
   return payload
 }
 
@@ -134,11 +143,18 @@ export async function GET(request: NextRequest) {
       const authError = await requireAdmin({ permissions: 'pricing:read', storeId })
       if (authError) return authError
     }
+    const takeHomeOnly = searchParams.get('takeHomeOnly') === 'true'
+    if (takeHomeOnly && !isAdmin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     const includeInactive = isAdmin && requestedIncludeInactive
 
     if (id) {
       const fee = await db.designationFee.findFirst({
-        where: { id, storeId, ...(isAdmin ? {} : { isActive: true }) },
+        where: {
+          id,
+          storeId,
+          isTakeHomeBonus: takeHomeOnly,
+          ...(isAdmin ? {} : { isActive: true }),
+        },
       })
 
       if (!fee || (!includeInactive && !fee.isActive)) {
@@ -150,12 +166,13 @@ export async function GET(request: NextRequest) {
     const fees = await db.designationFee.findMany({
       where: {
         storeId,
+        isTakeHomeBonus: takeHomeOnly,
         ...(includeInactive ? {} : { isActive: true }),
       },
       orderBy: [{ sortOrder: 'asc' }, { price: 'asc' }, { name: 'asc' }],
     })
 
-    if (!fees.length && env.featureFlags.useMockFallbacks) {
+    if (!takeHomeOnly && !fees.length && env.featureFlags.useMockFallbacks) {
       return buildFallbackResponse(null, includeInactive, isAdmin)
     }
 
@@ -221,7 +238,20 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Designation fee not found' }, { status: 404 })
     }
 
-    const payload = buildDesignationPayload(rest, 'update')
+    if (
+      rest.isTakeHomeBonus !== undefined &&
+      rest.isTakeHomeBonus !== existingFee.isTakeHomeBonus
+    ) {
+      return NextResponse.json({ error: '料金の用途は変更できません' }, { status: 400 })
+    }
+    const payload = buildDesignationPayload(
+      {
+        ...rest,
+        isTakeHomeBonus: existingFee.isTakeHomeBonus,
+        kind: rest.kind ?? existingFee.kind,
+      },
+      'update'
+    )
 
     const result = await db.designationFee.update({
       where: { id },

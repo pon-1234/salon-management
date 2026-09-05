@@ -16,7 +16,7 @@ type EditableDay = {
 }
 
 export type ScheduleBatchItem =
-  | { date: string; status: 'holiday' }
+  | { date: string; status: 'holiday' | 'unset'; note?: string; mediaText?: string }
   | {
       date: string
       status: 'working'
@@ -29,11 +29,20 @@ export type ScheduleBatchItem =
     }
 
 export function buildScheduleBatchPayload(
-  schedule: Record<string, EditableDay>
+  schedule: Record<string, EditableDay>,
+  options: { includeUnset?: boolean } = {}
 ): ScheduleBatchItem[] {
   return Object.entries(schedule).flatMap<ScheduleBatchItem>(([date, day]) => {
-    if (day.status === '未入力') return []
-    if (day.status === '休日') return [{ date, status: 'holiday' as const }]
+    if (day.status === '未入力' && !options.includeUnset) return []
+    if (day.status === '休日' || day.status === '未入力')
+      return [
+        {
+          date,
+          status: day.status === '休日' ? 'holiday' : 'unset',
+          ...(day.note !== undefined ? { note: day.note } : {}),
+          ...(day.mediaText !== undefined ? { mediaText: day.mediaText } : {}),
+        },
+      ]
     if (!day.startTime || !day.endTime) return []
     return [
       {

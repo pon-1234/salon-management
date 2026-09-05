@@ -34,7 +34,7 @@ describe('inferDesignationKindFromName', () => {
     expect(inferDesignationKindFromName('リピート指名')).toBe('repeat')
     expect(inferDesignationKindFromName('本指名')).toBe('repeat')
     expect(inferDesignationKindFromName('パネル指名')).toBe('panel')
-    expect(inferDesignationKindFromName('おすすめ指名')).toBe('other')
+    expect(inferDesignationKindFromName('おすすめ指名')).toBe('recommend')
     expect(inferDesignationKindFromName('VIP指名')).toBe('other')
   })
 })
@@ -97,3 +97,10 @@ describe('payloadHasCompletedVisit', () => {
     expect(payloadHasCompletedVisit({ data: [] })).toBe(false)
   })
 })
+
+it.each(['おすすめP指名', 'おすすめパネル', 'おすすめ指名', 'recommend-designation'])(
+  'recognizes %s as the separate recommended category',
+  (name) => {
+    expect(inferDesignationKindFromName(name)).toBe('recommend')
+  }
+)

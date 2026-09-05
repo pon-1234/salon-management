@@ -60,7 +60,11 @@ import {
   type ReservationOptionRecord,
 } from '@/lib/reservation/resolve-selected-options'
 import { applyStoreCreditCardFee } from '@/lib/reservation/credit-card-fee'
-import { resolveDesignationRevenueContext } from '@/lib/reservation/cast-take-home-bonus'
+import {
+  resolveDesignationRevenueContext,
+  resolveCreateDesignationAmount,
+  StoreDesignationUnavailableError,
+} from '@/lib/reservation/cast-take-home-bonus'
 import {
   resolveCourseRevenueSource,
   resolveCourseSelectionPersistence,
@@ -725,18 +729,13 @@ export async function POST(request: NextRequest) {
             }))
         }
 
-        const requestedDesignationAmount = Number.isFinite(Number(reservationData.designationFee))
-          ? Number(reservationData.designationFee)
-          : 0
-        const castDesignationAmount =
-          reservationData.designationType === 'regular'
-            ? castRecord.regularDesignationFee
-            : reservationData.designationType === 'special'
-              ? castRecord.specialDesignationFee
-              : 0
-        const designationAmount = isAdmin
-          ? requestedDesignationAmount
-          : Math.max(Number(castDesignationAmount ?? 0), 0)
+        const designationAmount = await resolveCreateDesignationAmount(tx, {
+          storeId,
+          isAdmin,
+          designationType: reservationData.designationType,
+          designationFee: reservationData.designationFee,
+          specialDesignationFee: castRecord.specialDesignationFee,
+        })
 
         const pointsToUse = requestedPointsValue
         const manualDiscountAmount =
@@ -899,6 +898,9 @@ export async function POST(request: NextRequest) {
           },
           { status: 409 }
         )
+      }
+      if (error instanceof StoreDesignationUnavailableError) {
+        return NextResponse.json({ error: error.message }, { status: 400 })
       }
       if (error instanceof InvalidOptionSelectionError) {
         return invalidOptionSelectionResponse(error)

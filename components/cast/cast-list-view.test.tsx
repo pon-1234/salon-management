@@ -54,3 +54,17 @@ describe('CastListView', () => {
     )
   })
 })
+
+it.each(['grid', 'list'] as const)(
+  'shows which verification document is missing in %s view without opening the cast',
+  (view) => {
+    render(
+      <CastListView
+        casts={[{ ...cast, photoIdVerifiedAt: null, residenceCertificateVerifiedAt: null }]}
+        view={view}
+      />
+    )
+    expect(screen.getByText('身分証 未確認')).toBeInTheDocument()
+    expect(screen.getByText('住民票 未確認')).toBeInTheDocument()
+  }
+)

@@ -35,8 +35,8 @@ export function CastListActionButtons({
   const characters = ['全', 'あ', 'か', 'さ', 'た', 'な', 'は', 'ま', 'や', 'ら', 'わ', 'その他']
 
   return (
-    <div className="space-y-2 border-b p-2">
-      <div className="flex items-center justify-between">
+    <div className="flex flex-wrap items-center gap-2 border-b p-2">
+      <div className="flex items-center gap-2">
         <Button onClick={onRefresh} variant="outline" size="sm">
           <RefreshCw className="mr-2 h-4 w-4" />
           更新
@@ -71,7 +71,7 @@ export function CastListActionButtons({
         />
       </div>
 
-      <div className="flex flex-wrap gap-1">
+      <div className="flex basis-full flex-wrap gap-1">
         {characters.map((char) => (
           <Button
             key={char}

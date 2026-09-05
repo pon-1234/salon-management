@@ -55,7 +55,26 @@ describe('ScheduleEditDialog day templates', () => {
     } as Response)
   })
 
-  it('keeps the cast name and the only save control together at the top', () => {
+  it('blocks template overwrites when saved templates could not be loaded', async () => {
+    global.fetch = vi.fn().mockResolvedValue({ ok: false, status: 503 } as Response)
+    render(
+      <ScheduleEditDialog
+        open
+        onOpenChange={vi.fn()}
+        castName="確認"
+        castId="cast-1"
+        startDate={new Date('2026-08-10T00:00:00+09:00')}
+        initialSchedule={{}}
+        onSave={vi.fn()}
+      />
+    )
+    expect(
+      await screen.findByText('テンプレートを読み込めませんでした。閉じて開き直してください。')
+    ).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'この時間をテンプレート保存' })).toBeDisabled()
+  })
+
+  it('keeps the cast name and a save control at the top and repeats save below', () => {
     render(
       <ScheduleEditDialog
         open
@@ -68,7 +87,7 @@ describe('ScheduleEditDialog day templates', () => {
       />
     )
 
-    expect(screen.getAllByRole('button', { name: '保存' })).toHaveLength(1)
+    expect(screen.getAllByRole('button', { name: '保存' })).toHaveLength(2)
     expect(screen.getByTestId('schedule-sticky-header')).toHaveTextContent('明里')
     expect(screen.queryByRole('button', { name: /昼勤/ })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /夜勤/ })).not.toBeInTheDocument()
@@ -137,6 +156,9 @@ describe('ScheduleEditDialog day templates', () => {
 
     const firstCard = document.querySelector('[id^="schedule-edit-day-"]') as HTMLElement
     expect(within(firstCard).getByText('予約受付停止')).toBeInTheDocument()
+    fireEvent.change(within(firstCard).getByLabelText('備考'), {
+      target: { value: '受付停止のまま追記' },
+    })
     fireEvent.click(screen.getAllByRole('button', { name: '保存' })[0])
     expect(onSave).toHaveBeenCalledWith(
       'cast-1',
@@ -186,7 +208,11 @@ describe('ScheduleEditDialog day templates', () => {
 
     fireEvent.click(screen.getByRole('button', { name: '4週間をカレンダー入力' }))
     await waitFor(() =>
-      expect(document.querySelectorAll('[id^="schedule-edit-day-"]')).toHaveLength(28)
+      expect(
+        screen
+          .getByRole('grid', { name: '4週間出勤カレンダー' })
+          .querySelectorAll('[data-calendar-date]')
+      ).toHaveLength(28)
     )
     const firstCard = document.querySelector('[id^="schedule-edit-day-"]') as HTMLElement
     expect(within(firstCard).getByRole('combobox', { name: '勤務状況' })).toHaveTextContent(
@@ -217,7 +243,7 @@ describe('ScheduleEditDialog day templates', () => {
 
     await waitFor(() =>
       expect(fetch).toHaveBeenCalledWith(
-        '/api/cast',
+        '/api/cast?storeId=store-ikebukuro',
         expect.objectContaining({ method: 'PUT', body: expect.stringContaining('12:00-22:00') })
       )
     )
@@ -353,4 +379,133 @@ describe('ScheduleEditDialog day templates', () => {
     expect(screen.getByRole('combobox', { name: 'テンプレート開始時間' })).toBeInTheDocument()
     expect(screen.getByRole('combobox', { name: 'テンプレート終了時間' })).toBeInTheDocument()
   })
+})
+
+describe('ScheduleEditDialog persistence and navigation', () => {
+  beforeEach(() => {
+    global.fetch = vi
+      .fn()
+      .mockResolvedValue({ ok: true, json: async () => ({ data: [], scheduleTemplates: [] }) })
+  })
+  const props = {
+    open: true,
+    castName: '確認用',
+    castId: 'cast-1',
+    startDate: new Date('2026-08-10T00:00:00+09:00'),
+    initialSchedule: {},
+  }
+  it('awaits saving, prevents duplicate saves, and stays open after success', async () => {
+    let finish!: () => void
+    const onSave = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          finish = resolve
+        })
+    )
+    const onOpenChange = vi.fn()
+    render(<ScheduleEditDialog {...props} onSave={onSave} onOpenChange={onOpenChange} />)
+    fireEvent.click(screen.getAllByRole('button', { name: '保存' })[0])
+    expect(screen.getAllByRole('button', { name: /保存中/ })[0]).toBeDisabled()
+    expect(onOpenChange).not.toHaveBeenCalled()
+    finish()
+    await waitFor(() => expect(screen.getAllByRole('button', { name: '保存' })[0]).toBeEnabled())
+    expect(onOpenChange).not.toHaveBeenCalled()
+  })
+  it('keeps edits after a failed save and asks before discarding', async () => {
+    const onOpenChange = vi.fn()
+    render(
+      <ScheduleEditDialog
+        {...props}
+        onSave={vi.fn().mockRejectedValue(new Error('通信エラー'))}
+        onOpenChange={onOpenChange}
+      />
+    )
+    fireEvent.change(screen.getAllByLabelText('備考')[0], { target: { value: '未保存のメモ' } })
+    fireEvent.click(screen.getAllByRole('button', { name: '保存' })[0])
+    await waitFor(() => expect(screen.getAllByRole('button', { name: '保存' })[0]).toBeEnabled())
+    expect(screen.getAllByLabelText('備考')[0]).toHaveValue('未保存のメモ')
+    fireEvent.click(screen.getByRole('button', { name: '閉じる' }))
+    expect(screen.getByRole('alertdialog')).toHaveTextContent('保存されていない変更')
+    expect(onOpenChange).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('button', { name: '編集を続ける' }))
+    expect(screen.getAllByLabelText('備考')[0]).toHaveValue('未保存のメモ')
+  })
+  it('loads the next week and retains unsaved edits when returning', async () => {
+    render(<ScheduleEditDialog {...props} onSave={vi.fn()} onOpenChange={vi.fn()} />)
+    fireEvent.change(screen.getAllByLabelText('備考')[0], {
+      target: { value: '翌週から戻っても保持' },
+    })
+    fireEvent.click(screen.getAllByRole('button', { name: '翌週' }).at(-1)!)
+    await waitFor(() =>
+      expect(fetch).toHaveBeenCalledWith(
+        expect.stringContaining('startDate=2026-08-17'),
+        expect.anything()
+      )
+    )
+    fireEvent.click(screen.getAllByRole('button', { name: '前週' })[0])
+    await waitFor(() =>
+      expect(screen.getAllByLabelText('備考')[0]).toHaveValue('翌週から戻っても保持')
+    )
+  })
+})
+
+it('shows a compact month with only the selected date expanded', async () => {
+  global.fetch = vi
+    .fn()
+    .mockResolvedValue({ ok: true, json: async () => ({ data: [], scheduleTemplates: [] }) })
+  render(
+    <ScheduleEditDialog
+      open
+      onOpenChange={vi.fn()}
+      castName="確認用"
+      castId="cast-1"
+      startDate={new Date('2026-08-10T00:00:00+09:00')}
+      initialSchedule={{}}
+      onSave={vi.fn()}
+    />
+  )
+  fireEvent.click(screen.getByRole('button', { name: '4週間をカレンダー入力' }))
+  expect(screen.getAllByLabelText('勤務状況')).toHaveLength(1)
+  fireEvent.click(screen.getByRole('button', { name: '8月12日(水) 未入力' }))
+  expect(document.querySelector('[id="schedule-edit-day-2026-08-12"]')).toBeInTheDocument()
+})
+
+it('blocks edits and saving when the requested range cannot be loaded', async () => {
+  global.fetch = vi.fn().mockImplementation(async (url: string) => ({
+    ok: !url.startsWith('/api/cast-schedule?'),
+    status: 503,
+    json: async () => ({ data: [], scheduleTemplates: [] }),
+  }))
+  render(
+    <ScheduleEditDialog
+      open
+      onOpenChange={vi.fn()}
+      castName="確認用"
+      castId="cast-1"
+      startDate={new Date('2026-08-10T00:00:00+09:00')}
+      initialSchedule={{}}
+      onSave={vi.fn()}
+    />
+  )
+  fireEvent.click(screen.getByRole('button', { name: '4週間をカレンダー入力' }))
+  expect(await screen.findByRole('alert')).toHaveTextContent('出勤表を取得できませんでした')
+  expect(screen.getAllByRole('button', { name: '保存' })[0]).toBeDisabled()
+})
+
+it('keeps unsaved edits when its parent refreshes schedule props', async () => {
+  global.fetch = vi
+    .fn()
+    .mockResolvedValue({ ok: true, json: async () => ({ data: [], scheduleTemplates: [] }) })
+  const props = {
+    open: true,
+    onOpenChange: vi.fn(),
+    castName: '確認用',
+    castId: 'cast-1',
+    startDate: new Date('2026-08-10T00:00:00+09:00'),
+    onSave: vi.fn(),
+  }
+  const { rerender } = render(<ScheduleEditDialog {...props} initialSchedule={{}} />)
+  fireEvent.change(screen.getAllByLabelText('備考')[0], { target: { value: '保持する入力' } })
+  rerender(<ScheduleEditDialog {...props} initialSchedule={{ '2026-08-10': { type: '休日' } }} />)
+  expect(screen.getAllByLabelText('備考')[0]).toHaveValue('保持する入力')
 })

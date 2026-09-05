@@ -27,7 +27,7 @@ export function ScheduleInfoBar({
 
   return (
     <div className="border-b bg-gradient-to-r from-emerald-50 to-blue-50">
-      <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 px-3 py-2">
         <h1 className="mr-auto flex items-center gap-2 text-base font-semibold text-gray-900">
           <Calendar className="h-4 w-4 text-emerald-600" />
           キャスト出勤管理

@@ -593,6 +593,53 @@ describe('QuickBookingDialog', () => {
     expect(screen.getByText(/キャスト売上:/)).toHaveTextContent('キャスト売上: 10,000円')
   })
 
+  it.each([
+    { kind: 'recommend', name: 'おすすめP指名', price: 2000, bonus: 1500 },
+    { kind: 'free', name: 'フリー', price: 0, bonus: 500 },
+  ])('previews the $kind cast bonus independently', async ({ kind, name, price, bonus }) => {
+    mocks.getDesignationFees.mockResolvedValue([
+      {
+        id: 'fee-selected',
+        name,
+        price,
+        storeShare: 0,
+        castShare: price,
+        sortOrder: 1,
+        isActive: true,
+        kind,
+      },
+    ])
+    vi.stubGlobal('fetch', createFetchMock())
+    render(
+      dialogElement({
+        selectedStaff: {
+          ...selectedStaff,
+          specialDesignationFee: price,
+          panelTakeHomeBonus: 1000,
+          regularTakeHomeBonus: 2000,
+          recommendedTakeHomeBonus: 1500,
+          freeTakeHomeBonus: 500,
+        },
+      })
+    )
+    await waitForOnePageBookingForm()
+    const user = userEvent.setup()
+    const select = screen.getByRole('combobox', { name: '指名設定' })
+    Object.assign(select, {
+      hasPointerCapture: () => false,
+      setPointerCapture: () => undefined,
+      releasePointerCapture: () => undefined,
+    })
+    await user.click(select)
+    await user.click(await screen.findByRole('option', { name: new RegExp(name) }))
+    expect(screen.getByText(/店舗売上:/)).toHaveTextContent(
+      `店舗売上: ${(3000 - bonus).toLocaleString()}円`
+    )
+    expect(screen.getByText(/キャスト売上:/)).toHaveTextContent(
+      `キャスト売上: ${(7000 + price + bonus).toLocaleString()}円`
+    )
+  })
+
   it('persists used points so the confirmed order can display the same deduction', async () => {
     const user = userEvent.setup()
     const fetchMock = createFetchMock()

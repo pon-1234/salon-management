@@ -42,6 +42,7 @@ const getDesignationFeesMock = vi.hoisted(() =>
       sortOrder: 2,
       isActive: true,
       kind: 'panel',
+      isTakeHomeBonus: true,
     },
     {
       id: 'repeat-up-2000',
@@ -52,6 +53,7 @@ const getDesignationFeesMock = vi.hoisted(() =>
       sortOrder: 3,
       isActive: true,
       kind: 'repeat',
+      isTakeHomeBonus: true,
     },
     {
       id: 'free-up-500',
@@ -62,6 +64,7 @@ const getDesignationFeesMock = vi.hoisted(() =>
       sortOrder: 4,
       isActive: true,
       kind: 'free',
+      isTakeHomeBonus: true,
     },
     {
       id: 'recommend-up-1500',
@@ -72,6 +75,18 @@ const getDesignationFeesMock = vi.hoisted(() =>
       sortOrder: 5,
       isActive: true,
       kind: 'recommend',
+      isTakeHomeBonus: true,
+    },
+    {
+      id: 'customer-panel',
+      name: '顧客向けパネル指名',
+      price: 2000,
+      kind: 'panel',
+      isTakeHomeBonus: false,
+      isActive: true,
+      storeShare: 1000,
+      castShare: 1000,
+      sortOrder: 9,
     },
   ])
 )
@@ -123,6 +138,9 @@ describe('CastForm pricing scope', () => {
     expect(await screen.findByRole('option', { name: 'フリーUP（500円）' })).toBeInTheDocument()
     fireEvent.click(screen.getByLabelText('パネル指名手取UP'))
     expect(await screen.findByRole('option', { name: 'パネルUP A（1,000円）' })).toBeInTheDocument()
+    expect(
+      screen.queryByRole('option', { name: '顧客向けパネル指名（2,000円）' })
+    ).not.toBeInTheDocument()
     fireEvent.click(screen.getByLabelText('おすすめP指名手取UP'))
     expect(await screen.findByRole('option', { name: 'おすすめUP（1,500円）' })).toBeInTheDocument()
     fireEvent.click(screen.getByLabelText('本指名手取UP'))

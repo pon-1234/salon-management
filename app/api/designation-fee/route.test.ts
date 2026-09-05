@@ -188,3 +188,55 @@ describe('designation-fee production reads', () => {
     expect(db.designationFee.findMany).not.toHaveBeenCalled()
   })
 })
+
+describe('separate take-home catalog', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.mocked(db.store.findUnique).mockResolvedValue({ id: 'store-a' } as never)
+    vi.mocked(getServerSession).mockResolvedValue({ user: { role: 'admin' } } as never)
+    vi.mocked(requireAdmin).mockResolvedValue(null)
+    vi.mocked(db.designationFee.findMany).mockResolvedValue([])
+  })
+  it.each([
+    ['', false],
+    ['&takeHomeOnly=true', true],
+  ])('filters the requested catalog %s', async (query, isTakeHomeBonus) => {
+    await GET(new NextRequest('http://localhost/api/designation-fee?storeId=store-a' + query))
+    expect(db.designationFee.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ storeId: 'store-a', isTakeHomeBonus }),
+      })
+    )
+  })
+  it('does not expose bonus rates to customer sessions', async () => {
+    vi.mocked(getServerSession).mockResolvedValue({ user: { role: 'customer' } } as never)
+    const response = await GET(
+      new NextRequest('http://localhost/api/designation-fee?storeId=store-a&takeHomeOnly=true')
+    )
+    expect(response.status).toBe(403)
+    expect(db.designationFee.findMany).not.toHaveBeenCalled()
+  })
+  it('persists a bonus rate with zero customer revenue shares', async () => {
+    vi.mocked(db.designationFee.create).mockResolvedValue({ id: 'bonus' } as never)
+    const response = await POST(
+      new NextRequest('http://localhost/api/designation-fee?storeId=store-a', {
+        method: 'POST',
+        body: JSON.stringify({
+          name: 'フリーUP',
+          price: 1500,
+          kind: 'free',
+          isTakeHomeBonus: true,
+        }),
+      })
+    )
+    expect(response.status).toBe(201)
+    expect(db.designationFee.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        isTakeHomeBonus: true,
+        price: 1500,
+        storeShare: 0,
+        castShare: 0,
+      }),
+    })
+  })
+})

@@ -12,6 +12,7 @@ type FetchOptions = {
   includeInactive?: boolean
   storeId?: string
   surfaceErrors?: boolean
+  takeHomeOnly?: boolean
 }
 
 async function fetchJson<T>(path: string, init?: RequestInit): Promise<T> {
@@ -55,6 +56,7 @@ export async function getDesignationFees(options: FetchOptions = {}): Promise<De
   if (options.storeId) {
     params.set('storeId', options.storeId)
   }
+  if (options.takeHomeOnly) params.set('takeHomeOnly', 'true')
   const query = params.toString()
 
   try {
@@ -68,7 +70,7 @@ export async function getDesignationFees(options: FetchOptions = {}): Promise<De
     if (options.surfaceErrors) {
       throw error
     }
-    if (!shouldUseMockFallbacks()) {
+    if (options.takeHomeOnly || !shouldUseMockFallbacks()) {
       return []
     }
     if (process.env.NODE_ENV !== 'production') {

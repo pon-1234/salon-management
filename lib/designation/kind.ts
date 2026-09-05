@@ -41,7 +41,11 @@ export function inferDesignationKindFromName(name: string | null | undefined): D
   if (normalized === 'パネル指名' || normalized === 'panel' || normalized === 'panel-designation') {
     return 'panel'
   }
-  if (normalized === 'おすすめP指名') {
+  if (
+    ['おすすめP指名', 'おすすめパネル', 'おすすめ指名', 'recommend-designation'].includes(
+      normalized
+    )
+  ) {
     return 'recommend'
   }
   return 'other'

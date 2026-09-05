@@ -1,7 +1,7 @@
 /**
  * @design_doc   Client operational review: cast list actions must navigate to real workflows
  * @related_to   CastManagePage: receives deep links for sales, payments, and settlements
- * @known_issues Cast contact details are not part of the current Cast domain model
+ * @known_issues None
  */
 import { Cast } from '@/lib/cast/types'
 import { FALLBACK_IMAGE } from '@/lib/cast/mapper'
@@ -41,7 +41,7 @@ export function CastListView({ casts, view = 'grid' }: CastListViewProps) {
                     <SafeImage
                       src={memberImage}
                       alt={member.name}
-                      className="aspect-[4/5] w-full object-cover"
+                      className="h-28 w-full object-cover object-top md:h-32"
                     />
                   </Link>
                   <Badge className="absolute right-2 top-2 bg-emerald-600">
@@ -55,7 +55,7 @@ export function CastListView({ casts, view = 'grid' }: CastListViewProps) {
                   >
                     {member.name}
                   </Link>
-                  <p className="text-sm text-gray-500">{member.nameKana}</p>
+                  <p className="truncate text-xs text-gray-500">{member.nameKana}</p>
                   <div className="mt-1 text-xs">
                     <p>
                       {member.age}歳 / {member.height}cm
@@ -63,12 +63,18 @@ export function CastListView({ casts, view = 'grid' }: CastListViewProps) {
                     <p>
                       {member.bust}/{member.waist}/{member.hip}
                     </p>
-                    <p>{member.type}</p>
+                    <p className="truncate">{member.type}</p>
                   </div>
                   {warnings.length > 0 ? (
                     <div className="mt-2 text-xs text-amber-700" title={warnings.join(' / ')}>
                       <AlertTriangle className="mr-1 inline h-3 w-3" />
-                      本人確認 {warnings.length}件
+                      {warnings.map((warning) => (
+                        <span key={warning} className="block">
+                          {warning
+                            .replace('写真付き身分証が未確認です', '身分証 未確認')
+                            .replace('本籍地入り住民票が未確認です', '住民票 未確認')}
+                        </span>
+                      ))}
                     </div>
                   ) : null}
                   <div className="mt-2 flex gap-1">
@@ -136,7 +142,13 @@ export function CastListView({ casts, view = 'grid' }: CastListViewProps) {
                 {warnings.length > 0 ? (
                   <Badge variant="outline" className="border-amber-300 text-amber-700">
                     <AlertTriangle className="mr-1 h-3 w-3" />
-                    本人確認 {warnings.length}件
+                    {warnings.map((warning) => (
+                      <span key={warning} className="block">
+                        {warning
+                          .replace('写真付き身分証が未確認です', '身分証 未確認')
+                          .replace('本籍地入り住民票が未確認です', '住民票 未確認')}
+                      </span>
+                    ))}
                   </Badge>
                 ) : null}
               </div>

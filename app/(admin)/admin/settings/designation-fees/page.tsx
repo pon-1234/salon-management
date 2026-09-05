@@ -5,6 +5,7 @@
  * @related_to   Designation fee API persists the reservation designation catalog
  * @known_issues None
  */
+import { TakeHomeBonusSettings } from '@/components/cast/take-home-bonus-settings'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { PageHeader } from '@/components/admin/page-header'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
@@ -46,7 +47,7 @@ import { ConfirmDialog } from '@/components/shared/confirm-dialog'
 const KIND_LABELS: Record<DesignationFeeKind, string> = {
   free: 'フリー',
   repeat: 'リピート指名',
-  panel: 'パネル・おすすめ',
+  panel: 'パネル指名',
   recommend: 'おすすめP指名',
   other: 'その他',
 }
@@ -303,9 +304,10 @@ export default function DesignationFeesPage() {
           }
         />
 
+        <TakeHomeBonusSettings key={currentStore.id} storeId={currentStore.id} />
         <Card>
           <CardHeader>
-            <CardTitle>指名料一覧</CardTitle>
+            <CardTitle>お客様向け指名料一覧</CardTitle>
             <CardDescription>指名料ごとの料金と売上配分バランスを一覧表示します。</CardDescription>
           </CardHeader>
           <CardContent>

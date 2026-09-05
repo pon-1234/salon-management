@@ -438,6 +438,8 @@ enum DesignationFeeKind {
 }
 
 model DesignationFee {
+  /// Internal cast bonus catalog; never a customer-facing designation charge.
+  isTakeHomeBonus               Boolean            @default(false)
   id                            String             @id @default(cuid())
   name                          String
   price                         Int                @default(0)

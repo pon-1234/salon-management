@@ -9,6 +9,7 @@ export interface DesignationFee {
   description?: string | null
   sortOrder: number
   isActive: boolean
+  isTakeHomeBonus?: boolean
   kind?: DesignationFeeKind
   createdAt?: string | Date | null
   updatedAt?: string | Date | null

@@ -27,7 +27,7 @@ const batchScheduleSchema = z.object({
     z
       .object({
         date: dateKeySchema,
-        status: z.enum(['working', 'holiday']),
+        status: z.enum(['working', 'holiday', 'unset']),
         workStatus: workingStatusSchema.optional(),
         startTime: scheduleTimeSchema.optional(),
         endTime: scheduleTimeSchema.optional(),
@@ -87,14 +87,14 @@ export async function POST(request: NextRequest) {
           },
         })
 
-        if (schedule.status === 'holiday') {
+        if (schedule.status === 'holiday' || schedule.status === 'unset') {
           const holidayData = {
             startTime: date,
             endTime: date,
             isAvailable: false,
             notes: schedule.note || null,
             mediaText: schedule.mediaText || null,
-            status: '休日',
+            status: schedule.status === 'holiday' ? '休日' : '未入力',
           }
           if (existing) {
             const updated = await tx.castSchedule.update({

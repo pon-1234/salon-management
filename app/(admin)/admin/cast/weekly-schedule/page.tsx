@@ -166,33 +166,8 @@ export default function WeeklySchedulePage() {
   }
 
   const handleSaveSchedule = async (castId: string, editedSchedule: WeeklyScheduleEdit) => {
-    setSchedule((previousSchedule) => {
-      if (!previousSchedule) return previousSchedule
-
-      const optimisticSchedule: CastScheduleEntry['schedule'] = Object.fromEntries(
-        Object.entries(editedSchedule).map(([dateKey, daySchedule]) => [
-          dateKey,
-          {
-            type: daySchedule.status,
-            startTime: daySchedule.startTime,
-            endTime: daySchedule.endTime,
-            note: daySchedule.note,
-            mediaText: daySchedule.mediaText,
-            isAvailable: daySchedule.isAvailable,
-          },
-        ])
-      )
-
-      return {
-        ...previousSchedule,
-        entries: previousSchedule.entries.map((entry) =>
-          entry.castId === castId ? { ...entry, schedule: optimisticSchedule } : entry
-        ),
-      }
-    })
-
     try {
-      const schedules = buildScheduleBatchPayload(editedSchedule)
+      const schedules = buildScheduleBatchPayload(editedSchedule, { includeUnset: true })
 
       const response = await fetch(
         buildStoreScopedEndpoint('/api/cast-schedule/batch', currentStore.id),
@@ -212,15 +187,49 @@ export default function WeeklySchedulePage() {
         title: '成功',
         description: result.message || 'スケジュールを保存しました',
       })
-      await handleRefresh()
+      setSchedule((previousSchedule) => {
+        if (!previousSchedule) return previousSchedule
+
+        const optimisticSchedule: CastScheduleEntry['schedule'] = Object.fromEntries(
+          Object.entries(editedSchedule).map(([dateKey, daySchedule]) => [
+            dateKey,
+            {
+              type: daySchedule.status,
+              startTime: daySchedule.startTime,
+              endTime: daySchedule.endTime,
+              note: daySchedule.note,
+              mediaText: daySchedule.mediaText,
+              isAvailable: daySchedule.isAvailable,
+            },
+          ])
+        )
+
+        return {
+          ...previousSchedule,
+          entries: previousSchedule.entries.map((entry) =>
+            entry.castId === castId
+              ? { ...entry, schedule: { ...entry.schedule, ...optimisticSchedule } }
+              : entry
+          ),
+        }
+      })
+      try {
+        const refreshed = await castScheduleUseCases.getWeeklySchedule({
+          date,
+          castFilter: 'all',
+          storeId: currentStore.id,
+        })
+        setSchedule(refreshed)
+      } catch (error) {
+        console.error('Schedule saved but totals refresh failed:', error)
+        toast({
+          title: '保存済みです',
+          description: '集計の再取得に失敗しました。出勤表の更新ボタンで再読み込みできます。',
+        })
+      }
     } catch (error) {
       console.error('Failed to save schedule:', error)
-      await handleRefresh()
-      toast({
-        title: 'エラー',
-        description: error instanceof Error ? error.message : 'スケジュールの保存に失敗しました',
-        variant: 'destructive',
-      })
+      throw error
     }
   }
 

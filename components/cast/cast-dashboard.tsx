@@ -3,7 +3,7 @@
 /**
  * @design_doc   Client operational review: cast dashboard actions persist through domain APIs
  * @related_to   CastManagePage, ReservationDialog, ReservationRepositoryImpl
- * @known_issues Cast phone numbers are not part of the current Cast domain model
+ * @known_issues None
  */
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { Cast, CastSchedule } from '@/lib/cast/types'
@@ -27,6 +27,7 @@ import {
 } from '@/components/cast-schedule/schedule-edit-dialog'
 import type { CastScheduleStatus, ScheduleWorkStatus } from '@/lib/cast-schedule/old-types'
 import { buildScheduleBatchPayload } from '@/lib/cast-schedule/batch-payload'
+import { buildStoreScopedEndpoint } from '@/lib/store/endpoints'
 import { useStore } from '@/contexts/store-context'
 import { mapReservationToReservationData } from '@/lib/reservation/transformers'
 interface CastDashboardProps {
@@ -40,6 +41,7 @@ export function CastDashboard({ cast, onUpdate, onRequestEdit }: CastDashboardPr
   const [reservations, setReservations] = useState<Reservation[]>([])
   const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null)
   const [scheduleMap, setScheduleMap] = useState<Record<string, CastSchedule>>({})
+  const [scheduleReady, setScheduleReady] = useState(false)
   const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false)
   const weekStart = useMemo(() => startOfWeek(new Date(), { weekStartsOn: 1 }), [])
   const weekEnd = useMemo(() => addDays(weekStart, 6), [weekStart])
@@ -158,6 +160,7 @@ export function CastDashboard({ cast, onUpdate, onRequestEdit }: CastDashboardPr
       }
 
       setScheduleMap(map)
+      setScheduleReady(true)
     } catch (error) {
       console.error('Failed to load cast schedule:', error)
       toast({
@@ -175,16 +178,19 @@ export function CastDashboard({ cast, onUpdate, onRequestEdit }: CastDashboardPr
   const handleScheduleSave = useCallback(
     async (_castId: string, updated: WeeklyScheduleEdit) => {
       try {
-        const response = await fetch('/api/cast-schedule/batch', {
-          method: 'POST',
-          credentials: 'include',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            castId: cast.id,
-            storeId: currentStore.id,
-            schedules: buildScheduleBatchPayload(updated),
-          }),
-        })
+        const response = await fetch(
+          buildStoreScopedEndpoint('/api/cast-schedule/batch', currentStore.id),
+          {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              castId: cast.id,
+              storeId: currentStore.id,
+              schedules: buildScheduleBatchPayload(updated, { includeUnset: true }),
+            }),
+          }
+        )
         if (!response.ok) throw new Error('スケジュールの更新に失敗しました')
 
         await fetchSchedule()
@@ -408,7 +414,12 @@ export function CastDashboard({ cast, onUpdate, onRequestEdit }: CastDashboardPr
                 <Clock className="h-5 w-5" />
                 今週のスケジュール
               </CardTitle>
-              <Button variant="outline" size="sm" onClick={() => setScheduleDialogOpen(true)}>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={!scheduleReady}
+                onClick={() => setScheduleDialogOpen(true)}
+              >
                 <Edit className="mr-2 h-4 w-4" />
                 編集
               </Button>

@@ -569,12 +569,14 @@ describe('CastScheduleUseCases', () => {
           id: '1',
           name: 'Test Cast 1',
           age: 25,
+          employmentStatus: 'active',
           image: '/test1.jpg',
         },
         {
           id: '2',
           name: 'Test Cast 2',
           age: 28,
+          employmentStatus: 'active',
           image: '/test2.jpg',
         },
       ]
@@ -685,11 +687,24 @@ describe('CastScheduleUseCases', () => {
         name: `Cast ${index}`,
         nameKana: `cast ${index}`,
         age: 25,
+        employmentStatus: 'active',
         image: '/cast.jpg',
       }))
       const secondPage = [
-        { id: 'cast-100', name: 'Cast 100', age: 25, image: '/cast.jpg' },
-        { id: 'cast-101', name: 'Cast 101', age: 25, image: '/cast.jpg' },
+        {
+          id: 'cast-100',
+          name: 'Cast 100',
+          age: 25,
+          employmentStatus: 'active',
+          image: '/cast.jpg',
+        },
+        {
+          id: 'cast-101',
+          name: 'Cast 101',
+          age: 25,
+          employmentStatus: 'active',
+          image: '/cast.jpg',
+        },
       ]
 
       global.fetch = vi
@@ -778,9 +793,9 @@ describe('CastScheduleUseCases', () => {
       const testDate = new Date('2024-01-15')
 
       const mockCasts = [
-        { id: '1', name: 'Cast 1', age: 25, image: '/test1.jpg' },
-        { id: '2', name: 'Cast 2', age: 28, image: '/test2.jpg' },
-        { id: '3', name: 'Cast 3', age: 30, image: '/test3.jpg' },
+        { id: '1', name: 'Cast 1', age: 25, employmentStatus: 'active', image: '/test1.jpg' },
+        { id: '2', name: 'Cast 2', age: 28, employmentStatus: 'active', image: '/test2.jpg' },
+        { id: '3', name: 'Cast 3', age: 30, employmentStatus: 'active', image: '/test3.jpg' },
       ]
 
       const mockSchedules = [
@@ -845,4 +860,26 @@ describe('CastScheduleUseCases', () => {
       expect(result.stats.averageWorkingCast).toBeCloseTo(0.7, 1) // 5 working days / 7 days
     })
   })
+})
+
+it('lists only active casts and excludes retired/provisional casts even when they have shifts', async () => {
+  fallbackFlag.enabled = false
+  const casts = ['active', 'retired', 'provisional'].map((employmentStatus) => ({
+    id: employmentStatus,
+    name: employmentStatus,
+    employmentStatus,
+    age: 25,
+    image: '/cast.jpg',
+  }))
+  global.fetch = vi
+    .fn()
+    .mockResolvedValueOnce({ ok: true, json: async () => casts })
+    .mockResolvedValueOnce({ ok: true, json: async () => [] })
+  const result = await new CastScheduleUseCases().getWeeklySchedule({
+    date: new Date('2026-09-07T00:00:00+09:00'),
+    castFilter: 'all',
+    storeId: 'store-a',
+  })
+  expect(result.entries.map((entry) => entry.castId)).toEqual(['active'])
+  expect(result.stats.totalCast).toBe(1)
 })

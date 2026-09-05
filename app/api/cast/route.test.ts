@@ -397,7 +397,7 @@ describe('Cast API endpoints', () => {
           storeId: 'store-a',
           isActive: true,
         },
-        select: { id: true, kind: true },
+        select: { id: true, kind: true, isTakeHomeBonus: true },
       })
       expect(mockedDb.cast.create).not.toHaveBeenCalled()
     })
@@ -647,6 +647,62 @@ describe('Cast API endpoints', () => {
         error: 'Validation error',
       })
       expect(payload.details?.[0]?.path).toEqual(['image'])
+    })
+  })
+
+  describe('cast defaults and bonus catalog boundary', () => {
+    it('creates a minimal new cast as provisional', async () => {
+      mockedDb.cast.create.mockResolvedValue({
+        id: 'new-cast',
+        name: '確認用',
+        images: [],
+        schedules: [],
+        reservations: [],
+      })
+      const response = await POST(
+        new NextRequest('http://localhost:3000/api/cast', {
+          method: 'POST',
+          body: JSON.stringify({ name: '確認用' }),
+        })
+      )
+      expect(response.status).toBe(201)
+      expect(mockedDb.cast.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ employmentStatus: 'provisional' }),
+        })
+      )
+    })
+    it('rejects reusing one category rate in two different bonus fields', async () => {
+      mockedDb.cast.findFirst.mockResolvedValue({ id: 'test-id' })
+      mockedDb.designationFee.findMany.mockResolvedValue([
+        { id: 'same-rate', kind: 'repeat', isTakeHomeBonus: true },
+      ])
+      const response = await PUT(
+        new NextRequest('http://localhost:3000/api/cast', {
+          method: 'PUT',
+          body: JSON.stringify({
+            id: 'test-id',
+            panelTakeHomeBonusId: 'same-rate',
+            regularTakeHomeBonusId: 'same-rate',
+          }),
+        })
+      )
+      expect(response.status).toBe(400)
+      expect(mockedDb.cast.update).not.toHaveBeenCalled()
+    })
+    it('rejects a customer designation fee used as a take-home bonus', async () => {
+      mockedDb.cast.findFirst.mockResolvedValue({ id: 'test-id' })
+      mockedDb.designationFee.findMany.mockResolvedValue([
+        { id: 'customer-panel', kind: 'panel', isTakeHomeBonus: false },
+      ])
+      const response = await PUT(
+        new NextRequest('http://localhost:3000/api/cast', {
+          method: 'PUT',
+          body: JSON.stringify({ id: 'test-id', panelTakeHomeBonusId: 'customer-panel' }),
+        })
+      )
+      expect(response.status).toBe(400)
+      expect(mockedDb.cast.update).not.toHaveBeenCalled()
     })
   })
 
