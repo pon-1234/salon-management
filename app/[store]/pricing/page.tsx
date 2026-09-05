@@ -46,7 +46,7 @@ export default async function PricingPage({ params }: { params: Promise<{ store:
   const storePricing = await getPublicStorePricing(store.id)
   const { courses, options, additionalFees, notes } = storePricing
 
-  const sortedCourses = courses.slice().sort((a, b) => a.duration - b.duration || a.price - b.price)
+  const sortedCourses = courses
 
   const optionsByCategory = options.reduce(
     (acc, option) => {

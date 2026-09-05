@@ -203,6 +203,8 @@ describe('HotelInfoPage', () => {
       target: { value: '池袋グランドホテル' },
     })
     expect(screen.getByLabelText('最寄り駅・出口')).toHaveValue('池袋（北口）')
+    expect(screen.getByLabelText('地域')).toHaveValue('池袋北口')
+    fireEvent.change(screen.getByLabelText('地域'), { target: { value: '豊島区' } })
     fireEvent.click(screen.getByRole('button', { name: 'ホテルを更新' }))
 
     await waitFor(() =>
@@ -214,5 +216,7 @@ describe('HotelInfoPage', () => {
       })
     )
     expect(await screen.findByText('池袋グランドホテル')).toBeInTheDocument()
+    const sent = JSON.parse(vi.mocked(fetch).mock.calls.at(-1)![1]!.body as string)
+    expect(sent).toMatchObject({ area: '豊島区', station: '池袋（北口）' })
   })
 })

@@ -258,9 +258,7 @@ export function QuickBookingDialog({
             storeShare: null,
             castShare: null,
           }))
-    return mapped
-      .filter((course) => Number.isFinite(course.duration) && course.duration > 0)
-      .sort((left, right) => left.duration - right.duration || left.price - right.price)
+    return mapped.filter((course) => Number.isFinite(course.duration) && course.duration > 0)
   }, [courses, coursePrices])
 
   const normalizedOptions: NormalizedOption[] = useMemo(() => {

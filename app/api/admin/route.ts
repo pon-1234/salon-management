@@ -8,6 +8,11 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth/config'
 import { db } from '@/lib/db'
 import logger from '@/lib/logger'
+import {
+  canCreateStaffAccount,
+  canEditAdminAccount,
+  canChangeAdminAccess,
+} from '@/lib/admin/account-management'
 import { ADMIN_PASSWORD_MIN_LENGTH } from '@/lib/admin/password-policy'
 import { z } from 'zod'
 import bcrypt from 'bcryptjs'
@@ -124,8 +129,8 @@ async function getAdminSession() {
   return { session }
 }
 
-function ensureSuperAdmin(session: any) {
-  if (session.user?.adminRole !== 'super_admin') {
+function ensureAccountManager(session: { user: { adminRole?: string } }) {
+  if (session.user.adminRole !== 'super_admin' && session.user.adminRole !== 'manager') {
     return NextResponse.json({ error: 'この操作を行う権限がありません' }, { status: 403 })
   }
   return null
@@ -161,6 +166,15 @@ export async function GET() {
   if (!session) return error!
 
   const admins = await db.admin.findMany({
+    where:
+      session.user.adminRole === 'super_admin'
+        ? undefined
+        : {
+            OR: [
+              { id: session.user.id },
+              { storeAssignments: { some: { storeId: { in: session.user.storeIds ?? [] } } } },
+            ],
+          },
     orderBy: { createdAt: 'desc' },
     include: storeAssignmentInclude,
   })
@@ -174,12 +188,19 @@ export async function POST(request: NextRequest) {
   const { session, error } = await getAdminSession()
   if (!session) return error!
 
-  const authError = ensureSuperAdmin(session)
+  const authError = ensureAccountManager(session)
   if (authError) return authError
 
   try {
     const payload = await request.json()
     const data = createSchema.parse(payload)
+
+    if (
+      session.user.adminRole !== 'super_admin' &&
+      (data.role !== 'staff' || !canCreateStaffAccount(session.user, data.storeIds))
+    ) {
+      return NextResponse.json({ error: 'この操作を行う権限がありません' }, { status: 403 })
+    }
 
     if (data.role !== 'super_admin') {
       const validStoreCount = await db.store.count({
@@ -233,7 +254,7 @@ export async function PUT(request: NextRequest) {
   const { session, error } = await getAdminSession()
   if (!session) return error!
 
-  const authError = ensureSuperAdmin(session)
+  const authError = ensureAccountManager(session)
   if (authError) return authError
 
   try {
@@ -249,6 +270,24 @@ export async function PUT(request: NextRequest) {
           include: storeAssignmentInclude,
         })
         if (!existing) return { status: 'not_found' as const }
+        const target = {
+          ...existing,
+          storeIds: existing.storeAssignments.map((assignment) => assignment.storeId),
+        }
+        if (!canEditAdminAccount(session.user, target)) return { status: 'forbidden' as const }
+        if (session.user.adminRole !== 'super_admin') {
+          const changesAccess =
+            data.role !== undefined || data.storeIds !== undefined || data.isActive !== undefined
+          if (changesAccess && !canChangeAdminAccess(session.user, target))
+            return { status: 'forbidden' as const }
+          if (
+            target.role === 'staff' &&
+            ((data.role !== undefined && data.role !== 'staff') ||
+              !canCreateStaffAccount(session.user, data.storeIds ?? target.storeIds))
+          ) {
+            return { status: 'forbidden' as const }
+          }
+        }
 
         const updateData: Record<string, any> = {}
 
@@ -338,6 +377,9 @@ export async function PUT(request: NextRequest) {
       { isolationLevel: 'Serializable' }
     )
 
+    if (result.status === 'forbidden') {
+      return NextResponse.json({ error: 'この操作を行う権限がありません' }, { status: 403 })
+    }
     if (result.status === 'not_found') {
       return NextResponse.json({ error: '管理者が見つかりません' }, { status: 404 })
     }
@@ -386,7 +428,7 @@ export async function DELETE(request: NextRequest) {
   const { session, error } = await getAdminSession()
   if (!session) return error!
 
-  const authError = ensureSuperAdmin(session)
+  const authError = ensureAccountManager(session)
   if (authError) return authError
 
   try {
@@ -403,8 +445,19 @@ export async function DELETE(request: NextRequest) {
 
     const result = await db.$transaction(
       async (transaction) => {
-        const target = await transaction.admin.findUnique({ where: { id } })
+        const target = await transaction.admin.findUnique({
+          where: { id },
+          include: storeAssignmentInclude,
+        })
         if (!target) return { status: 'not_found' as const }
+        if (
+          !canChangeAdminAccess(session.user, {
+            ...target,
+            storeIds: target.storeAssignments?.map((assignment) => assignment.storeId) ?? [],
+          })
+        ) {
+          return { status: 'forbidden' as const }
+        }
         if (!target.isActive) return { status: 'already_inactive' as const }
 
         if (target.role === 'super_admin') {
@@ -429,6 +482,9 @@ export async function DELETE(request: NextRequest) {
       { isolationLevel: 'Serializable' }
     )
 
+    if (result.status === 'forbidden') {
+      return NextResponse.json({ error: 'この操作を行う権限がありません' }, { status: 403 })
+    }
     if (result.status === 'not_found') {
       return NextResponse.json({ error: '管理者が見つかりません' }, { status: 404 })
     }

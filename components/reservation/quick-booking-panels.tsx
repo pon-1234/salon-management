@@ -5,6 +5,8 @@
  */
 'use client'
 
+import { HotelPicker } from './hotel-picker'
+export { formatHotelOptionLabel } from './hotel-picker'
 import type { ReactNode } from 'react'
 import { CreditCard } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -171,16 +173,6 @@ type VisitDetailsProps = {
   onChange: (field: 'hotelName' | 'roomNumber' | 'locationMemo', value: string) => void
 }
 
-export function formatHotelOptionLabel(hotel: NonNullable<VisitDetailsProps['hotels']>[number]) {
-  const area = hotel.area?.trim()
-  const parts = [
-    area && !hotel.hotelName.includes(area) ? area : null,
-    hotel.station,
-    hotel.hotelName,
-  ]
-  return parts.filter(Boolean).join(' ＞ ')
-}
-
 export function QuickBookingVisitDetails({
   hotelName,
   roomNumber,
@@ -191,26 +183,13 @@ export function QuickBookingVisitDetails({
   return (
     <>
       {hotels.length > 0 ? (
-        <div>
-          <Label htmlFor="quick-booking-hotel-select">登録ホテルから選択</Label>
-          <select
-            id="quick-booking-hotel-select"
-            aria-label="登録ホテルから選択"
-            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-            value={hotels.find((hotel) => hotel.hotelName === hotelName)?.id ?? ''}
-            onChange={(event) => {
-              const selected = hotels.find((hotel) => hotel.id === event.target.value)
-              onChange('hotelName', selected?.hotelName ?? '')
-            }}
-          >
-            <option value="">直接入力</option>
-            {hotels.map((hotel) => (
-              <option key={hotel.id} value={hotel.id}>
-                {formatHotelOptionLabel(hotel)}
-              </option>
-            ))}
-          </select>
-        </div>
+        <HotelPicker
+          id="quick-booking-hotel-select"
+          label="登録ホテルから選択"
+          hotels={hotels}
+          hotelName={hotelName}
+          onChange={(name) => onChange('hotelName', name)}
+        />
       ) : null}
       <div className="grid grid-cols-2 gap-4">
         <div>

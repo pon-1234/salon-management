@@ -49,6 +49,127 @@ describe('/api/admin store assignments', () => {
     vi.mocked(db.$transaction).mockImplementation((async (operation: any) => operation(db)) as any)
   })
 
+  describe('store manager account boundaries', () => {
+    const staff = {
+      id: 'staff-1',
+      email: 'staff@example.com',
+      name: 'Staff',
+      role: 'staff',
+      permissions: [],
+      isActive: true,
+      storeAssignments: [{ storeId: 'ginza' }],
+      ...timestamps,
+    }
+    beforeEach(() => {
+      vi.mocked(getServerSession).mockResolvedValue({
+        user: { id: 'manager-1', role: 'admin', adminRole: 'manager', storeIds: ['ginza'] },
+      } as any)
+      vi.mocked(db.admin.findUnique).mockResolvedValue(staff as any)
+      vi.mocked(db.admin.create).mockResolvedValue(staff as any)
+      vi.mocked(db.admin.update).mockResolvedValue({ ...staff, name: 'Updated' } as any)
+    })
+    const request = (method: string, data: object) =>
+      new NextRequest('http://localhost/api/admin', {
+        method,
+        body: JSON.stringify(data),
+      })
+    it('creates staff and edits or deactivates staff in the assigned store', async () => {
+      const created = await POST(
+        request('POST', {
+          email: staff.email,
+          name: staff.name,
+          password: 'strong-password-123',
+          role: 'staff',
+          storeIds: ['ginza'],
+        })
+      )
+      expect(created.status).toBe(201)
+      expect((await PUT(request('PUT', { id: staff.id, name: 'Updated' }))).status).toBe(200)
+      expect(
+        (
+          await DELETE(
+            new NextRequest(`http://localhost/api/admin?id=${staff.id}`, { method: 'DELETE' })
+          )
+        ).status
+      ).toBe(200)
+      expect(db.admin.update).toHaveBeenCalledWith(
+        expect.objectContaining({ data: { isActive: false } })
+      )
+    })
+    it('allows their own profile update but denies changing their own access', async () => {
+      vi.mocked(db.admin.findUnique).mockResolvedValue({
+        ...staff,
+        id: 'manager-1',
+        role: 'manager',
+      } as any)
+      expect((await PUT(request('PUT', { id: 'manager-1', name: 'Updated' }))).status).toBe(200)
+      vi.mocked(db.admin.update).mockClear()
+      for (const change of [
+        { role: 'super_admin' },
+        { storeIds: ['shinjuku'] },
+        { isActive: false },
+      ]) {
+        expect((await PUT(request('PUT', { id: 'manager-1', ...change }))).status).toBe(403)
+      }
+      expect(db.admin.update).not.toHaveBeenCalled()
+    })
+    it('rejects privilege escalation and cross-store staff mutations', async () => {
+      for (const change of [
+        { role: 'manager' },
+        { role: 'super_admin' },
+        { storeIds: ['shinjuku'] },
+        { storeIds: ['ginza', 'shinjuku'] },
+      ]) {
+        expect(
+          (
+            await POST(
+              request('POST', {
+                email: staff.email,
+                name: staff.name,
+                password: 'strong-password-123',
+                role: 'staff',
+                storeIds: ['ginza'],
+                ...change,
+              })
+            )
+          ).status
+        ).toBe(403)
+        expect((await PUT(request('PUT', { id: staff.id, ...change }))).status).toBe(403)
+      }
+      for (const target of [
+        { ...staff, role: 'manager' },
+        { ...staff, role: 'super_admin' },
+        { ...staff, storeAssignments: [{ storeId: 'ginza' }, { storeId: 'shinjuku' }] },
+      ]) {
+        vi.mocked(db.admin.findUnique).mockResolvedValue(target as any)
+        expect((await PUT(request('PUT', { id: staff.id, name: 'Updated' }))).status).toBe(403)
+        expect(
+          (
+            await DELETE(
+              new NextRequest(`http://localhost/api/admin?id=${staff.id}`, { method: 'DELETE' })
+            )
+          ).status
+        ).toBe(403)
+      }
+      expect(db.admin.create).not.toHaveBeenCalled()
+      expect(db.admin.update).not.toHaveBeenCalled()
+    })
+    it('limits account listings to the actor and their stores', async () => {
+      vi.mocked(db.admin.findMany).mockResolvedValue([])
+      expect((await GET()).status).toBe(200)
+      expect(db.admin.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            OR: [
+              { id: 'manager-1' },
+              { storeAssignments: { some: { storeId: { in: ['ginza'] } } } },
+            ],
+          },
+        })
+      )
+    })
+  })
+
   it('returns assigned store IDs with each administrator', async () => {
     vi.mocked(db.admin.findMany).mockResolvedValue([
       {

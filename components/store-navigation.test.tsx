@@ -58,6 +58,10 @@ describe('StoreNavigation', () => {
       'href',
       '/ikebukuro/register'
     )
+    expect(screen.getByRole('link', { name: 'ホテル案内' })).toHaveAttribute(
+      'href',
+      '/ikebukuro/hotels'
+    )
     expect(screen.getByRole('link', { name: 'ログイン' })).toHaveAttribute(
       'href',
       '/ikebukuro/login'

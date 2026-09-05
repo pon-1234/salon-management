@@ -110,7 +110,7 @@ export default function HotelInfoPage() {
   }
 
   const openEditForm = (hotel: Hotel) => {
-    setNewHotel({ ...hotel, area: null, amenities: [...hotel.amenities] })
+    setNewHotel({ ...hotel, amenities: [...hotel.amenities] })
     setEditingHotelId(hotel.id)
     setShowAddForm(true)
   }
@@ -127,11 +127,7 @@ export default function HotelInfoPage() {
             headers: {
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify(
-              editingHotelId
-                ? { ...newHotel, area: null, id: editingHotelId }
-                : { ...newHotel, area: null }
-            ),
+            body: JSON.stringify(editingHotelId ? { ...newHotel, id: editingHotelId } : newHotel),
           }
         )
 
@@ -368,6 +364,15 @@ export default function HotelInfoPage() {
                         value={newHotel.hotelName || ''}
                         onChange={(e) => setNewHotel({ ...newHotel, hotelName: e.target.value })}
                         placeholder="ホテル名を入力"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="hotel-area">地域</Label>
+                      <Input
+                        id="hotel-area"
+                        value={newHotel.area || ''}
+                        onChange={(e) => setNewHotel({ ...newHotel, area: e.target.value })}
+                        placeholder="豊島区"
                       />
                     </div>
                     <div className="space-y-2">

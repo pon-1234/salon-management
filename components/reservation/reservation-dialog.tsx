@@ -125,6 +125,7 @@ import {
   getCastAvailableOptions,
 } from '@/components/reservation/quick-booking.utils'
 import { buildStoreScopedEndpoint } from '@/lib/store/endpoints'
+import { HotelPicker } from '@/components/reservation/hotel-picker'
 import { useHotelOptions } from '@/components/reservation/use-hotel-options'
 import { isVisibleReservationOption, reservationOptionNote } from '@/lib/options/visibility'
 
@@ -2412,31 +2413,17 @@ export function ReservationDialog({
                       <div>
                         {hotelOptions.length > 0 ? (
                           <div className="mb-2">
-                            <Label htmlFor="entry-hotel-choice">入室情報の登録ホテル</Label>
-                            <select
+                            <HotelPicker
                               id="entry-hotel-choice"
-                              className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+                              label="入室情報の登録ホテル"
+                              hotels={hotelOptions}
+                              hotelName={formState.hotelName}
                               disabled={entrySending}
-                              value={
-                                hotelOptions.find(
-                                  (hotel) => hotel.hotelName === formState.hotelName
-                                )?.id ?? ''
-                              }
-                              onChange={(event) => {
-                                const hotelName =
-                                  hotelOptions.find((hotel) => hotel.id === event.target.value)
-                                    ?.hotelName ?? ''
+                              onChange={(hotelName) => {
                                 setFormState((prev) => ({ ...prev, hotelName }))
                                 setEntryForm((prev) => ({ ...prev, hotelName }))
                               }}
-                            >
-                              <option value="">直接入力</option>
-                              {hotelOptions.map((hotel) => (
-                                <option key={hotel.id} value={hotel.id}>
-                                  {hotel.hotelName}
-                                </option>
-                              ))}
-                            </select>
+                            />
                           </div>
                         ) : null}
                         <Label htmlFor="entry-hotel-name">ホテル名</Label>

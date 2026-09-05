@@ -1,5 +1,11 @@
 'use client'
 
+/**
+ * @design_doc https://app.notion.com/p/3ccdda8d8bde80ec928cc17adff35cde
+ * @related_to Public store pages and HotelsPage
+ * @known_issues None
+ */
+
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useSession, signOut } from 'next-auth/react'
@@ -19,6 +25,7 @@ import {
 const navigationItems = [
   { name: '料金システム', href: '/pricing' },
   { name: 'プレイ内容', href: '/services' },
+  { name: 'ホテル案内', href: '/hotels' },
   { name: '在籍一覧', href: '/cast' },
   { name: '出勤一覧', href: '/schedule' },
   { name: '入店情報', href: '/recruitment' },

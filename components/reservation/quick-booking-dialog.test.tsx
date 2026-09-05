@@ -296,6 +296,21 @@ describe('QuickBookingDialog', () => {
     vi.unstubAllGlobals()
   })
 
+  it('keeps the saved catalog order instead of sorting courses by duration', async () => {
+    mocks.coursePrices = [
+      { ...mocks.coursePrices[0], id: 'long', name: '先頭120分', duration: 120 },
+      { ...mocks.coursePrices[0], id: 'short', name: '後方60分', duration: 60 },
+    ]
+    vi.stubGlobal('fetch', createFetchMock())
+    render(dialogElement())
+    const select = await screen.findByRole('combobox', { name: 'コース1' })
+    expect(
+      Array.from((select as HTMLSelectElement).options)
+        .map((option) => option.value)
+        .filter(Boolean)
+    ).toEqual(['long', 'short'])
+  })
+
   it('uses the reservation受付 name and shows service location fields', async () => {
     vi.stubGlobal('fetch', createFetchMock())
     render(dialogElement())

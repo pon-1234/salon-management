@@ -21,7 +21,7 @@ export async function getPublicStorePricing(storeId: string): Promise<StorePrici
     const [courses, options] = await Promise.all([
       db.coursePrice.findMany({
         where: { storeId, isActive: true, archivedAt: null },
-        orderBy: [{ duration: 'asc' }, { price: 'asc' }],
+        orderBy: [{ displayOrder: 'asc' }, { duration: 'asc' }],
       }),
       db.optionPrice.findMany({
         where: { storeId, isActive: true, archivedAt: null, visibility: 'public' },

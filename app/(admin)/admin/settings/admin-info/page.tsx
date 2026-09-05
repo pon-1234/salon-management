@@ -3,7 +3,7 @@
 /**
  * @design_doc   ui-improvement-instructions.md U-4 destructive confirmation dialogs
  * @related_to   ConfirmDialog: replaces native confirm for admin deletion
- * @known_issues Existing admin form behavior is unchanged
+ * @known_issues Managers manage their own profile and staff assigned entirely to their stores
  */
 import { useEffect, useMemo, useState } from 'react'
 import { useSession } from 'next-auth/react'
@@ -48,6 +48,11 @@ import {
 import { formatInTimeZone } from 'date-fns-tz'
 import { cn } from '@/lib/utils'
 import { useStore } from '@/contexts/store-context'
+import {
+  canCreateStaffAccount,
+  canEditAdminAccount,
+  canChangeAdminAccess,
+} from '@/lib/admin/account-management'
 import { ADMIN_PASSWORD_MIN_LENGTH } from '@/lib/admin/password-policy'
 
 const JST_TIMEZONE = 'Asia/Tokyo'
@@ -123,6 +128,10 @@ export default function AdminInfoPage() {
   })
 
   const isSuperAdmin = session?.user?.adminRole === 'super_admin'
+  const canEditAccess = !editingAdmin || canChangeAdminAccess(session?.user, editingAdmin)
+  const assignableStores = availableStores.filter(
+    (store) => isSuperAdmin || session?.user?.storeIds?.includes(store.id)
+  )
 
   const fetchAdmins = async () => {
     try {
@@ -327,7 +336,7 @@ export default function AdminInfoPage() {
   }
 
   const handleDeactivate = async (admin: AdminRecord) => {
-    if (!isSuperAdmin) return
+    if (!canChangeAdminAccess(session?.user, admin)) return
 
     try {
       setSaving(true)
@@ -406,7 +415,10 @@ export default function AdminInfoPage() {
                   <RefreshCw className={cn('mr-2 h-4 w-4', loading ? 'animate-spin' : '')} />
                   再読み込み
                 </Button>
-                <Button onClick={openCreateDialog} disabled={!isSuperAdmin}>
+                <Button
+                  onClick={openCreateDialog}
+                  disabled={!canCreateStaffAccount(session?.user, [currentStore.id])}
+                >
                   <UserPlus className="mr-2 h-4 w-4" />
                   管理者を追加
                 </Button>
@@ -595,7 +607,7 @@ export default function AdminInfoPage() {
                               variant="outline"
                               size="icon"
                               onClick={() => openEditDialog(admin)}
-                              disabled={!isSuperAdmin}
+                              disabled={!canEditAdminAccount(session?.user, admin)}
                               title="編集"
                               aria-label={`${admin.name}を編集`}
                             >
@@ -611,7 +623,7 @@ export default function AdminInfoPage() {
                                 variant="outline"
                                 size="icon"
                                 disabled={
-                                  !isSuperAdmin ||
+                                  !canChangeAdminAccess(session?.user, admin) ||
                                   saving ||
                                   !admin.isActive ||
                                   admin.id === session?.user?.id
@@ -700,11 +712,12 @@ export default function AdminInfoPage() {
               <div className="space-y-2">
                 <Label className="text-sm font-medium">対象店舗</Label>
                 <div className="grid gap-2 rounded-lg border p-3 sm:grid-cols-2">
-                  {availableStores.map((store) => {
+                  {assignableStores.map((store) => {
                     const checked = formState.storeIds.includes(store.id)
                     return (
                       <label key={store.id} className="flex items-center gap-2 text-sm">
                         <Checkbox
+                          disabled={!canEditAccess}
                           checked={checked}
                           onCheckedChange={(value) => toggleStore(store.id, value === true)}
                         />
@@ -760,6 +773,7 @@ export default function AdminInfoPage() {
               </div>
               <Switch
                 id="admin-status"
+                disabled={!canEditAccess}
                 checked={formState.isActive}
                 onCheckedChange={(value) => handleInputChange('isActive', value)}
               />

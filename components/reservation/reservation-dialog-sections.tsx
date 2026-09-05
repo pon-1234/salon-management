@@ -5,6 +5,8 @@
  * @related_to   ReservationDialog, ReservationData
  * @known_issues None currently
  */
+import { HotelPicker } from './hotel-picker'
+import type { HotelOption } from './use-hotel-options'
 import { Calculator, Calendar, Clock, Info } from 'lucide-react'
 import { format } from 'date-fns'
 import { ja } from 'date-fns/locale'
@@ -64,7 +66,7 @@ type ReservationPrimarySummaryProps = {
   optionNames: string[]
   canViewFinancialDetails: boolean
   hotelName: string
-  hotelChoices?: Array<{ id: string; hotelName: string }>
+  hotelChoices?: HotelOption[]
   roomNumber: string
   locationMemo: string
   entrySending: boolean
@@ -362,24 +364,14 @@ export function ReservationPrimarySummary({
             <div>
               {hotelChoices.length > 0 ? (
                 <div className="mb-2">
-                  <Label htmlFor="summary-hotel-choice">登録ホテルから再選択</Label>
-                  <select
+                  <HotelPicker
                     id="summary-hotel-choice"
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                    value={hotelChoices.find((hotel) => hotel.hotelName === hotelName)?.id ?? ''}
-                    onChange={(event) => {
-                      const selected = hotelChoices.find((hotel) => hotel.id === event.target.value)
-                      onHotelNameChange(selected?.hotelName ?? '')
-                    }}
+                    label="登録ホテルから再選択"
+                    hotels={hotelChoices}
+                    hotelName={hotelName}
+                    onChange={onHotelNameChange}
                     disabled={entrySending}
-                  >
-                    <option value="">直接入力</option>
-                    {hotelChoices.map((hotel) => (
-                      <option key={hotel.id} value={hotel.id}>
-                        {hotel.hotelName}
-                      </option>
-                    ))}
-                  </select>
+                  />
                 </div>
               ) : null}
               <Label htmlFor="summary-hotel-name">ホテル名</Label>

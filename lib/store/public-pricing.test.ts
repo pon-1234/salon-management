@@ -45,6 +45,7 @@ describe('getPublicStorePricing', () => {
           isActive: true,
           archivedAt: null,
         },
+        orderBy: [{ displayOrder: 'asc' }, { duration: 'asc' }],
       })
     )
     expect(mocks.optionFindMany).toHaveBeenCalledWith(
