@@ -144,3 +144,10 @@ describe('reservation-dialog utils', () => {
     })
   })
 })
+
+it('uses configured methods and arbitrary sales media without injecting unconfigured channels', () => {
+  expect(partitionMarketingChannels(['電話', 'LINE', '駅ちか'], ['電話', 'LINE'])).toEqual({
+    methods: ['電話', 'LINE'],
+    sites: ['駅ちか'],
+  })
+})

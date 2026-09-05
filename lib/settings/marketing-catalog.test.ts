@@ -7,6 +7,17 @@ import { describe, expect, it } from 'vitest'
 import { mergeMarketingCatalog, splitMarketingCatalog } from './marketing-catalog'
 
 describe('marketing catalog', () => {
+  it('keeps arbitrary media names separate from explicitly configured booking methods', () => {
+    expect(
+      splitMarketingCatalog(
+        ['電話', 'WEB', 'SMS', 'LINE', '駅ちか', 'ぴゅあらば'],
+        ['電話', 'WEB', 'SMS', 'LINE']
+      )
+    ).toEqual({
+      methods: ['電話', 'WEB', 'SMS', 'LINE'],
+      channels: ['駅ちか', 'ぴゅあらば'],
+    })
+  })
   it('splits methods and site channels while preserving configured values', () => {
     expect(splitMarketingCatalog(['電話', '店リピート', 'Heaven', 'サイト関連：駅ちか'])).toEqual({
       methods: ['電話', '店リピート'],

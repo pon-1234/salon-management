@@ -19,6 +19,15 @@ describe('gold master Ikebukuro preview extractor', () => {
     source = await readFile(scriptPath, 'utf8')
   })
 
+  it('supports a scoped profile refresh including retired casts without exporting cast authentication secrets', () => {
+    expect(source).toContain("'cast-profiles'")
+    expect(source).toContain('g.lev IN (2, 3)')
+    expect(source).toContain('g.check_3_day')
+    expect(source).toContain('m.media_name')
+    expect(source).not.toContain('g.pass')
+    expect(source).not.toContain('g.login_id')
+  })
+
   it('is valid PHP and rejects invalid cutoff dates before reading credentials', async () => {
     const lint = await executeFile('php', ['-l', scriptPath], { cwd: process.cwd() })
     expect(lint.stderr).toBe('')

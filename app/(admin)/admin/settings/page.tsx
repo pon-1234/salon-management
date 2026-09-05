@@ -43,8 +43,17 @@ export default function SettingsPage() {
 
   const settingsItems: SettingItem[] = [
     {
+      id: 'media-view',
+      title: '媒体・店舗関連情報',
+      description: '媒体・ログイン情報：営業・求人・店舗関連サイトを閲覧',
+      icon: <Globe2 className="h-5 w-5" />,
+      status: 'available',
+      category: 'コンテンツ管理',
+      href: '/admin/media',
+    },
+    {
       id: 'media-info',
-      title: '媒体・ログイン情報',
+      title: 'ログイン・編集',
       description: '営業媒体と求人媒体のURL・ログイン情報を一元管理',
       icon: <Globe2 className="h-5 w-5" />,
       status: 'available',

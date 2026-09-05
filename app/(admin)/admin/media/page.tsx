@@ -49,7 +49,7 @@ export default function MediaPage() {
     <div className="p-6">
       <div className="mx-auto max-w-7xl space-y-6">
         <div className="flex items-center justify-between gap-3">
-          <PageHeader title="媒体一覧" />
+          <PageHeader title="媒体・店舗関連情報" />
           <Button variant="outline" asChild>
             <Link href="/admin/settings/media-info">
               <Settings className="mr-2 h-4 w-4" />

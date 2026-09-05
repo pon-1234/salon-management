@@ -321,6 +321,72 @@ describe('settings route authorization', () => {
     )
   })
 
+  it('persists booking methods independently from media names', async () => {
+    mocks.requireAdmin.mockResolvedValue(null)
+    mocks.storeSettingsFindUnique.mockResolvedValue({
+      id: 'settings-a',
+      storeId: 'store-a',
+      marketingChannels: ['電話', '駅ちか'],
+    })
+    mocks.storeSettingsUpdate.mockResolvedValue({
+      id: 'settings-a',
+      marketingMethods: ['電話', 'SMS', 'LINE'],
+      marketingChannels: ['電話', 'SMS', 'LINE', '駅ちか'],
+    })
+    const response = await updateStore(
+      jsonRequest('/api/settings/store?storeId=store-a', {
+        marketingMethods: ['電話', 'SMS', 'LINE'],
+        marketingChannels: ['電話', 'SMS', 'LINE', '駅ちか'],
+      })
+    )
+    expect(response.status).toBe(200)
+    expect(mocks.storeSettingsUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ marketingMethods: ['電話', 'SMS', 'LINE'] }),
+      })
+    )
+  })
+
+  it('preserves an intentionally emptied catalog on read and write', async () => {
+    mocks.requireAdmin.mockResolvedValue(null)
+    const settings = {
+      id: 'settings-a',
+      storeId: 'store-a',
+      marketingChannels: [],
+      marketingMethods: [],
+    }
+    mocks.storeSettingsFindUnique.mockResolvedValue(settings)
+    mocks.storeSettingsUpdate.mockResolvedValue(settings)
+    const read = await getStore(request('GET'))
+    expect((await read.json()).data.marketingChannels).toEqual([])
+    const write = await updateStore(
+      jsonRequest('/api/settings/store?storeId=store-a', {
+        marketingChannels: [],
+        marketingMethods: [],
+      })
+    )
+    expect((await write.json()).data.marketingChannels).toEqual([])
+  })
+
+  it('keeps configured methods when creating the first store settings', async () => {
+    mocks.requireAdmin.mockResolvedValue(null)
+    mocks.storeSettingsFindUnique.mockResolvedValue(null)
+    mocks.storeSettingsCreate.mockResolvedValue({
+      id: 'settings-a',
+      marketingMethods: ['SMS'],
+      marketingChannels: ['SMS'],
+    })
+    await updateStore(
+      jsonRequest('/api/settings/store?storeId=store-a', {
+        marketingMethods: ['SMS'],
+        marketingChannels: ['SMS'],
+      })
+    )
+    expect(mocks.storeSettingsCreate).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ marketingMethods: ['SMS'] }) })
+    )
+  })
+
   it('does not write demo settings when production fallbacks are disabled', async () => {
     mocks.requireAdmin.mockResolvedValue(null)
     mocks.areaFindMany.mockResolvedValue([])

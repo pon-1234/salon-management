@@ -102,7 +102,7 @@ import {
   QuickBookingVisitDetails,
   type ReceptionStaffOption,
 } from './quick-booking-panels'
-import { isVisibleReservationOption } from '@/lib/options/visibility'
+import { isVisibleReservationOption, reservationOptionNote } from '@/lib/options/visibility'
 
 const paymentMethods = Object.values(PAYMENT_METHODS)
 const DEFAULT_MARKETING_CHANNELS = [...MARKETING_CHANNELS]
@@ -194,6 +194,7 @@ export function QuickBookingDialog({
       ? selectedStaff
       : null
   )
+  const [marketingMethods, setMarketingMethods] = useState<string[] | undefined>()
   const [marketingChannels, setMarketingChannels] = useState<string[]>(DEFAULT_MARKETING_CHANNELS)
   const hotels = useHotelOptions(open, currentStore?.id)
   const [receptionStaffOptions, setReceptionStaffOptions] = useState<ReceptionStaffOption[]>([])
@@ -208,8 +209,8 @@ export function QuickBookingDialog({
   }, [activeStaffId, selectedStaff, staffOptions])
 
   const partitionedChannels = useMemo(
-    () => partitionMarketingChannels(marketingChannels),
-    [marketingChannels]
+    () => partitionMarketingChannels(marketingChannels, marketingMethods),
+    [marketingChannels, marketingMethods]
   )
 
   const slotWindowStart = selectedSlot?.startTime ?? selectedTime ?? null
@@ -268,7 +269,7 @@ export function QuickBookingDialog({
         id: option.id,
         name: option.name,
         price: option.price,
-        note: option.note,
+        note: reservationOptionNote(option.note),
         storeShare: option.storeShare ?? null,
         castShare: option.castShare ?? null,
       }))
@@ -278,7 +279,7 @@ export function QuickBookingDialog({
       id: option.id,
       name: option.name,
       price: option.price,
-      note: option.note ?? null,
+      note: reservationOptionNote(option.note),
       storeShare: null,
       castShare: null,
     }))
@@ -406,6 +407,8 @@ export function QuickBookingDialog({
         const payload = await response.json().catch(() => null)
         const data = payload?.data ?? payload
         const channels = Array.isArray(data?.marketingChannels) ? data.marketingChannels : null
+        if (!ignore && Array.isArray(data?.marketingMethods))
+          setMarketingMethods(data.marketingMethods)
         if (!ignore && Number.isFinite(Number(data?.creditCardFeeRate))) {
           setCreditCardFeeRate(Number(data.creditCardFeeRate) === 0 ? 0 : 10)
         }
@@ -414,9 +417,7 @@ export function QuickBookingDialog({
             .map((channel: unknown) => (typeof channel === 'string' ? channel.trim() : ''))
             .filter((channel: string) => channel.length > 0)
           if (normalized.length > 0) {
-            setMarketingChannels(
-              Array.from(new Set([...normalized, ...DEFAULT_MARKETING_CHANNELS]))
-            )
+            setMarketingChannels(Array.from(new Set(normalized)))
           }
         }
       } catch (error) {
@@ -480,7 +481,7 @@ export function QuickBookingDialog({
     if (marketingChannels.length === 0) {
       return
     }
-    const { methods, sites } = partitionMarketingChannels(marketingChannels)
+    const { methods, sites } = partitionMarketingChannels(marketingChannels, marketingMethods)
     setBookingDetails((prev) => {
       if (prev.marketingChannel && marketingChannels.includes(prev.marketingChannel)) {
         return prev
@@ -497,7 +498,7 @@ export function QuickBookingDialog({
         marketingChannel: methods[0] ?? marketingChannels[0],
       }
     })
-  }, [marketingChannels])
+  }, [marketingChannels, marketingMethods])
 
   useEffect(() => {
     let ignore = false

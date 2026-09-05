@@ -153,6 +153,12 @@ export function PublicProfileForm({
     image: cast?.image || '',
     images: cast?.images ? [...cast.images] : [],
     availableOptions: cast?.availableOptions ? [...cast.availableOptions] : [],
+    availableOptionSettings: cast.availableOptionSettings?.length
+      ? [...cast.availableOptionSettings]
+      : (cast.availableOptions ?? []).map((optionId) => ({
+          optionId,
+          visibility: 'public' as const,
+        })),
   })
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -197,6 +203,12 @@ export function PublicProfileForm({
       image: cast?.image || '',
       images: cast?.images ? [...cast.images] : [],
       availableOptions: cast?.availableOptions ? [...cast.availableOptions] : [],
+      availableOptionSettings: cast.availableOptionSettings?.length
+        ? [...cast.availableOptionSettings]
+        : (cast.availableOptions ?? []).map((optionId) => ({
+            optionId,
+            visibility: 'public' as const,
+          })),
     })
     setIsEditing?.(false)
     onCancel?.()
@@ -292,25 +304,6 @@ export function PublicProfileForm({
                 disabled={!isEditing}
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor={fieldId('type')}>タイプ</Label>
-              <Select
-                value={basicInfo.type || ''}
-                onValueChange={(value) => handleBasicInfoChange('type', value)}
-                disabled={!isEditing}
-              >
-                <SelectTrigger id={fieldId('type')}>
-                  <SelectValue placeholder="タイプを選択" />
-                </SelectTrigger>
-                <SelectContent>
-                  {PROFILE_STYLE_OPTIONS.map((option) => (
-                    <SelectItem key={option} value={option}>
-                      {option}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
             <div className="space-y-2 md:col-span-1 xl:col-span-3">
               <Label htmlFor={fieldId('birthplace')}>出身地</Label>
               <Input
@@ -322,22 +315,11 @@ export function PublicProfileForm({
               />
             </div>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor={fieldId('description')}>紹介文</Label>
-            <Textarea
-              id={fieldId('description')}
-              value={basicInfo.description || ''}
-              onChange={(e) => handleBasicInfoChange('description', e.target.value)}
-              placeholder="心を込めたサービスでお迎えします。"
-              className="min-h-[120px]"
-              disabled={!isEditing}
-            />
-          </div>
         </FormSection>
 
         <FormSection
-          title="媒体コメント・画像・可能オプション"
-          description="公開ページと予約時の表示内容をまとめて設定します。"
+          title="媒体掲載コメント"
+          description="外部媒体から取り込む紹介文です。自動配信やサイトへの投稿は行いません。"
         >
           <div className="space-y-2">
             <Label htmlFor={fieldId('mediaComment')}>媒体掲載用コメント</Label>
@@ -352,7 +334,7 @@ export function PublicProfileForm({
             <div>
               <Label htmlFor={fieldId('mediaSyncExcluded')}>媒体連動から除外</Label>
               <p className="text-xs text-muted-foreground">
-                個別に内容を管理し、自動連動しない場合だけオンにします。
+                オンにすると、外部媒体コメントの取込時もこのキャストの手入力内容を保持します。
               </p>
             </div>
             <Switch
@@ -362,6 +344,8 @@ export function PublicProfileForm({
               disabled={!isEditing}
             />
           </div>
+        </FormSection>
+        <FormSection title="画像設定" description="先頭の画像をメイン画像として表示します。">
           <div className="space-y-3">
             <Label>メイン画像・ギャラリー</Label>
             {basicInfo.images.map((image, index) => (
@@ -434,36 +418,49 @@ export function PublicProfileForm({
               </Button>
             ) : null}
           </div>
-          <div className="space-y-2">
-            <Label>可能オプション</Label>
-            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-              {optionPrices
-                .filter((option) => option.isActive !== false && isVisibleReservationOption(option))
-                .map((option) => {
-                  const selected = basicInfo.availableOptions.includes(option.id)
-                  return (
-                    <label
-                      key={option.id}
-                      className="flex items-center gap-2 rounded border p-3 text-sm"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={selected}
-                        disabled={!isEditing}
-                        onChange={(event) =>
-                          setBasicInfo((previous) => ({
-                            ...previous,
-                            availableOptions: event.target.checked
-                              ? [...previous.availableOptions, option.id]
-                              : previous.availableOptions.filter((id) => id !== option.id),
-                          }))
+        </FormSection>
+        <FormSection
+          title="可能オプション"
+          description="◯：オーダー・HP・ネット予約に表示。△：オーダーのみ（隠れオプション）。×：利用不可。店舗側の公開設定も適用されます。"
+        >
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {optionPrices
+              .filter((option) => option.isActive !== false && isVisibleReservationOption(option))
+              .map((option) => (
+                <div key={option.id} className="space-y-1 rounded border p-3 text-sm">
+                  <Label htmlFor={`option-availability-${option.id}`}>{option.name}</Label>
+                  <select
+                    id={`option-availability-${option.id}`}
+                    aria-label={`${option.name}の対応`}
+                    className="h-9 w-full rounded border bg-background px-2"
+                    disabled={!isEditing}
+                    value={
+                      basicInfo.availableOptionSettings.find(
+                        ({ optionId }) => optionId === option.id
+                      )?.visibility ?? 'unavailable'
+                    }
+                    onChange={(event) => {
+                      const visibility = event.target.value
+                      setBasicInfo((previous) => {
+                        const settings = previous.availableOptionSettings.filter(
+                          ({ optionId }) => optionId !== option.id
+                        )
+                        if (visibility === 'public' || visibility === 'internal')
+                          settings.push({ optionId: option.id, visibility })
+                        return {
+                          ...previous,
+                          availableOptionSettings: settings,
+                          availableOptions: settings.map(({ optionId }) => optionId),
                         }
-                      />
-                      {option.name}
-                    </label>
-                  )
-                })}
-            </div>
+                      })
+                    }}
+                  >
+                    <option value="public">◯ 可能（公開）</option>
+                    <option value="internal">△ 隠れオプション（オーダーのみ）</option>
+                    <option value="unavailable">× 不可</option>
+                  </select>
+                </div>
+              ))}
           </div>
         </FormSection>
 
@@ -472,6 +469,25 @@ export function PublicProfileForm({
           description="タグを選択すると、お客様が検索しやすくなります。複数選択可能です。"
         >
           <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor={fieldId('type')}>タイプ</Label>
+              <Select
+                value={basicInfo.type || ''}
+                onValueChange={(value) => handleBasicInfoChange('type', value)}
+                disabled={!isEditing}
+              >
+                <SelectTrigger id={fieldId('type')}>
+                  <SelectValue placeholder="タイプを選択" />
+                </SelectTrigger>
+                <SelectContent>
+                  {PROFILE_STYLE_OPTIONS.map((option) => (
+                    <SelectItem key={option} value={option}>
+                      {option}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <div className="space-y-2">
               <Label className="text-sm font-medium">体型</Label>
               <div className="flex flex-wrap gap-2">
@@ -507,7 +523,7 @@ export function PublicProfileForm({
           title="可能プレイ"
           description="提供可能なサービスを選択すると、予約画面のおすすめにも反映されます。"
         >
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
             {SERVICE_OPTIONS.map((service) => (
               <SelectablePill
                 key={service}

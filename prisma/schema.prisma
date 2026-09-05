@@ -641,6 +641,7 @@ model StoreSettings {
   creditCardFeeRate     Decimal  @default(10)
   mediaCommentOverwrite Boolean  @default(false)
   hourlyGuaranteeAmount Int      @default(0)
+  marketingMethods      String[] @default(["店リピート", "電話", "紹介", "SNS", "WEB", "SMS", "LINE"])
   marketingChannels     String[] @default(["店リピート", "電話", "紹介", "SNS", "WEB", "Heaven"])
   mediaAccounts         Json     @default("[]")
   pointEarnRate         Decimal  @default(1.0)

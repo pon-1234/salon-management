@@ -5,7 +5,7 @@
  * @related_to   PageHeader: shared settings header; Header: global admin navigation
  * @known_issues Form validation remains ad hoc until U-11 settings migration
  */
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { PageHeader } from '@/components/admin/page-header'
 import { useStore } from '@/contexts/store-context'
 import { toast } from '@/hooks/use-toast'
@@ -46,33 +46,51 @@ export default function StoreInfoPage() {
     marketingMethodsInput: DEFAULT_MARKETING_CATALOG.methods.join('\n'),
     marketingChannelsInput: DEFAULT_MARKETING_CATALOG.channels.join('\n'),
   })
+  const originalForm = useRef<Record<string, unknown>>({})
+  const activeStoreId = useRef(currentStore.id)
+  activeStoreId.current = currentStore.id
+  const [loadedStoreId, setLoadedStoreId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
 
   const fetchStoreSettings = useCallback(async () => {
+    const requestStoreId = currentStore.id
+    setLoading(true)
+    setLoadedStoreId(null)
     try {
-      const response = await fetch(buildStoreScopedEndpoint('/api/settings/store', currentStore.id))
+      const response = await fetch(buildStoreScopedEndpoint('/api/settings/store', requestStoreId))
       if (!response.ok) throw new Error('Failed to fetch store settings')
 
       const payload = await response.json()
+      if (activeStoreId.current !== requestStoreId) return
       const settings = payload?.data ?? payload
       const marketingCatalog = splitMarketingCatalog(
-        Array.isArray(settings?.marketingChannels) && settings.marketingChannels.length > 0
+        Array.isArray(settings?.marketingChannels)
           ? settings.marketingChannels
-          : MARKETING_CHANNELS
+          : MARKETING_CHANNELS,
+        settings.marketingMethods
       )
-      setFormData((prev) => ({
-        ...prev,
-        ...settings,
-        welfareExpenseRate:
-          settings?.welfareExpenseRate !== undefined
-            ? String(Number(settings.welfareExpenseRate))
-            : prev.welfareExpenseRate,
-        creditCardFeeRate: Number(settings?.creditCardFeeRate) === 0 ? '0' : '10',
-        mediaCommentOverwrite: Boolean(settings?.mediaCommentOverwrite),
-        marketingMethodsInput: marketingCatalog.methods.join('\n'),
-        marketingChannelsInput: marketingCatalog.channels.join('\n'),
-      }))
+      setFormData((prev) => {
+        const next = {
+          ...prev,
+          ...Object.fromEntries(
+            Object.keys(prev)
+              .filter((key) => key in settings)
+              .map((key) => [key, settings[key]])
+          ),
+          welfareExpenseRate:
+            settings?.welfareExpenseRate !== undefined
+              ? String(Number(settings.welfareExpenseRate))
+              : prev.welfareExpenseRate,
+          creditCardFeeRate: Number(settings?.creditCardFeeRate) === 0 ? '0' : '10',
+          mediaCommentOverwrite: Boolean(settings?.mediaCommentOverwrite),
+          marketingMethodsInput: marketingCatalog.methods.join('\n'),
+          marketingChannelsInput: marketingCatalog.channels.join('\n'),
+        }
+        originalForm.current = next
+        return next
+      })
+      setLoadedStoreId(requestStoreId)
     } catch (error) {
       console.error('Error fetching store settings:', error)
       toast({
@@ -81,7 +99,7 @@ export default function StoreInfoPage() {
         variant: 'destructive',
       })
     } finally {
-      setLoading(false)
+      if (activeStoreId.current === requestStoreId) setLoading(false)
     }
   }, [currentStore.id])
 
@@ -94,17 +112,32 @@ export default function StoreInfoPage() {
   }
 
   const handleSave = async () => {
+    if (loadedStoreId !== currentStore.id || saving) return
     setSaving(true)
     try {
       const { marketingMethodsInput, marketingChannelsInput, ...restForm } = formData
       const marketingChannels = mergeMarketingCatalog(marketingMethodsInput, marketingChannelsInput)
 
+      const changed = Object.fromEntries(
+        Object.entries(restForm).filter(([key, value]) => originalForm.current[key] !== value)
+      )
+      const catalogChanged =
+        marketingMethodsInput !== originalForm.current.marketingMethodsInput ||
+        marketingChannelsInput !== originalForm.current.marketingChannelsInput
       const payload = {
-        ...restForm,
-        welfareExpenseRate: Number(formData.welfareExpenseRate || 0),
-        creditCardFeeRate: Number(formData.creditCardFeeRate) === 0 ? 0 : 10,
-        marketingChannels:
-          marketingChannels.length > 0 ? marketingChannels : [...MARKETING_CHANNELS],
+        ...changed,
+        ...('welfareExpenseRate' in changed
+          ? { welfareExpenseRate: Number(formData.welfareExpenseRate || 0) }
+          : {}),
+        ...('creditCardFeeRate' in changed
+          ? { creditCardFeeRate: Number(formData.creditCardFeeRate) === 0 ? 0 : 10 }
+          : {}),
+        ...(catalogChanged
+          ? {
+              marketingMethods: mergeMarketingCatalog(marketingMethodsInput, ''),
+              marketingChannels,
+            }
+          : {}),
       }
       const response = await fetch(
         buildStoreScopedEndpoint('/api/settings/store', currentStore.id),
@@ -119,25 +152,7 @@ export default function StoreInfoPage() {
 
       if (!response.ok) throw new Error('Failed to save store settings')
 
-      const payloadData = await response.json().catch(() => null)
-      const updated = payloadData?.data ?? payloadData
-      if (updated && typeof updated === 'object') {
-        const marketingCatalog = splitMarketingCatalog(
-          Array.isArray(updated?.marketingChannels) && updated.marketingChannels.length > 0
-            ? updated.marketingChannels
-            : marketingChannels
-        )
-        setFormData((prev) => ({
-          ...prev,
-          ...updated,
-          welfareExpenseRate:
-            updated?.welfareExpenseRate !== undefined
-              ? String(Number(updated.welfareExpenseRate))
-              : prev.welfareExpenseRate,
-          marketingMethodsInput: marketingCatalog.methods.join('\n'),
-          marketingChannelsInput: marketingCatalog.channels.join('\n'),
-        }))
-      }
+      await fetchStoreSettings()
 
       toast({
         title: '成功',
@@ -328,7 +343,7 @@ export default function StoreInfoPage() {
                     value={formData.marketingMethodsInput}
                     onChange={(e) => handleInputChange('marketingMethodsInput', e.target.value)}
                     rows={7}
-                    placeholder="例）&#10;店リピート&#10;電話&#10;紹介&#10;SNS&#10;WEB"
+                    placeholder="例）&#10;電話&#10;WEB&#10;SMS&#10;LINE"
                   />
                   <p className="text-xs text-muted-foreground">
                     予約の受付経路を1行につき1つ入力します。
@@ -461,7 +476,7 @@ export default function StoreInfoPage() {
               <Button
                 onClick={handleSave}
                 className="bg-emerald-600 hover:bg-emerald-700"
-                disabled={saving}
+                disabled={saving || loadedStoreId !== currentStore.id}
               >
                 {saving ? '保存中...' : '保存'}
               </Button>

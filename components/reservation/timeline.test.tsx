@@ -205,6 +205,7 @@ describe('Timeline appointment cards', () => {
       {
         ...staff[0],
         specialDesignationFee: 5_000,
+        specialDesignationFeeLabel: 'ブラック',
         regularDesignationRank: 2,
         panelDesignationRank: 3,
       },
@@ -229,10 +230,10 @@ describe('Timeline appointment cards', () => {
 
     const nameRow = screen.getByTestId('timeline-cast-name-さら')
     expect(nameRow).toHaveTextContent('さら')
-    expect(nameRow).toHaveTextContent('特別指名料 5,000円')
-    expect(nameRow).toHaveClass('flex-col', 'items-start')
-    expect(nameRow).not.toHaveClass('items-center')
-    expect(within(nameRow).getByText('さら')).toHaveClass('w-full')
+    expect(nameRow).toHaveTextContent('ランク：ブラック')
+    expect(nameRow).toHaveClass('items-center', 'flex-nowrap')
+    expect(nameRow).not.toHaveTextContent('5,000円')
+    expect(nameRow).not.toHaveTextContent('特別指名料')
     expect(screen.queryByText('本指名 2位')).not.toBeInTheDocument()
     expect(screen.queryByText('パネル 3位')).not.toBeInTheDocument()
   })
@@ -242,6 +243,7 @@ describe('Timeline appointment cards', () => {
       {
         ...staff[0],
         specialDesignationFee: 5_000,
+        specialDesignationFeeLabel: 'ブラック',
       },
     ]
 
@@ -262,8 +264,8 @@ describe('Timeline appointment cards', () => {
       />
     )
 
-    expect(screen.getByTestId('timeline-cast-name-さら')).toHaveTextContent('特別指名料 5,000円')
-    expect(screen.getByLabelText('特別指名料 5,000円')).toBeInTheDocument()
+    expect(screen.getByTestId('timeline-cast-name-さら')).toHaveTextContent('ランク：ブラック')
+    expect(screen.getByLabelText('ランク：ブラック')).toBeInTheDocument()
   })
 
   it('does not mark a cast without a special designation fee', () => {

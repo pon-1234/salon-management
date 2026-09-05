@@ -444,20 +444,16 @@ export function Timeline({
       <div className="min-w-0 flex-1 text-left">
         <div
           data-testid={`timeline-cast-name-${member.name}`}
-          className="flex min-w-0 flex-col items-start"
+          className="flex min-w-0 flex-nowrap items-center gap-1"
         >
-          <span className="w-full truncate text-sm font-medium leading-4">{member.name}</span>
-          {member.specialDesignationFee != null && member.specialDesignationFee > 0 ? (
+          <span className="truncate text-sm font-medium leading-4">{member.name}</span>
+          {member.specialDesignationFeeLabel ? (
             <Badge
-              className="mt-0.5 h-3.5 max-w-full shrink-0 px-1 text-[9px] leading-none"
+              className="h-4 shrink-0 px-1 text-[9px] leading-none"
               variant="outline"
-              aria-label={`特別指名料${member.specialDesignationFeeLabel ? ` ${member.specialDesignationFeeLabel}` : ''} ${member.specialDesignationFee.toLocaleString('ja-JP')}円`}
+              aria-label={`ランク：${member.specialDesignationFeeLabel}`}
             >
-              特別指名料
-              {member.specialDesignationFeeLabel
-                ? ` ${member.specialDesignationFeeLabel}`
-                : ''}{' '}
-              {member.specialDesignationFee.toLocaleString('ja-JP')}円
+              ランク：{member.specialDesignationFeeLabel}
             </Badge>
           ) : null}
         </div>

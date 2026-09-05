@@ -1,10 +1,18 @@
 /**
  * @design_doc   Notion task #281 acquisition method/channel settings
- * @related_to   Store settings persist one compatible catalog; reservation forms split the catalog
- * @known_issues Site-channel classification relies on the configured site naming convention
+ * @related_to   StoreSettings.marketingMethods classifies the compatible marketingChannels catalog
+ * @known_issues Legacy records without explicit methods use the default method vocabulary
  */
 
-const SITE_CHANNEL_HINTS = ['heaven', 'ヘブン', 'サイト関連'] as const
+export const DEFAULT_MARKETING_METHODS = [
+  '店リピート',
+  '電話',
+  '紹介',
+  'SNS',
+  'WEB',
+  'SMS',
+  'LINE',
+] as const
 
 function uniqueLines(value: string): string[] {
   return value
@@ -13,7 +21,10 @@ function uniqueLines(value: string): string[] {
     .filter((item, index, items) => item.length > 0 && items.indexOf(item) === index)
 }
 
-export function splitMarketingCatalog(values: readonly string[]): {
+export function splitMarketingCatalog(
+  values: readonly string[],
+  configuredMethods: readonly string[] = DEFAULT_MARKETING_METHODS
+): {
   methods: string[]
   channels: string[]
 } {
@@ -23,10 +34,11 @@ export function splitMarketingCatalog(values: readonly string[]): {
   for (const rawValue of values) {
     const value = rawValue.trim()
     if (!value) continue
-    const normalized = value.toLowerCase()
-    const destination = SITE_CHANNEL_HINTS.some((hint) => normalized.includes(hint))
-      ? channels
-      : methods
+    const destination = configuredMethods.some(
+      (method) => method.toLowerCase() === value.toLowerCase()
+    )
+      ? methods
+      : channels
     if (!destination.includes(value)) destination.push(value)
   }
 

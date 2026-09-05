@@ -126,7 +126,7 @@ import {
 } from '@/components/reservation/quick-booking.utils'
 import { buildStoreScopedEndpoint } from '@/lib/store/endpoints'
 import { useHotelOptions } from '@/components/reservation/use-hotel-options'
-import { isVisibleReservationOption } from '@/lib/options/visibility'
+import { isVisibleReservationOption, reservationOptionNote } from '@/lib/options/visibility'
 
 const MAX_LINE_MESSAGE_LENGTH = 1000
 
@@ -214,6 +214,7 @@ export function ReservationDialog({
   const [modificationAlerts, setModificationAlerts] = useState<ModificationAlert[]>([])
   const [isHistoryLoading, setIsHistoryLoading] = useState(false)
   const [historyReloadToken, setHistoryReloadToken] = useState(0)
+  const [marketingMethods, setMarketingMethods] = useState<string[] | undefined>()
   const [marketingChannelOptions, setMarketingChannelOptions] = useState<string[]>(() => {
     const seed = new Set<string>(DEFAULT_MARKETING_CHANNELS)
     if (reservation?.marketingChannel) {
@@ -223,8 +224,8 @@ export function ReservationDialog({
   })
   const [receptionStaffOptions, setReceptionStaffOptions] = useState<ReceptionStaffOption[]>([])
   const partitionedMarketingChannels = useMemo(
-    () => partitionMarketingChannels(marketingChannelOptions),
-    [marketingChannelOptions]
+    () => partitionMarketingChannels(marketingChannelOptions, marketingMethods),
+    [marketingChannelOptions, marketingMethods]
   )
 
   const [lineMessage, setLineMessage] = useState('')
@@ -292,17 +293,17 @@ export function ReservationDialog({
         const payload = await response.json().catch(() => null)
         const data = payload?.data ?? payload
         const channels = Array.isArray(data?.marketingChannels) ? data.marketingChannels : null
+        if (!ignore && Array.isArray(data?.marketingMethods))
+          setMarketingMethods(data.marketingMethods)
         if (!ignore && channels) {
           const normalized = channels
             .map((channel: unknown) => (typeof channel === 'string' ? channel.trim() : ''))
             .filter((channel: string) => channel.length > 0)
           const merged = Array.from(
             new Set(
-              [
-                ...normalized,
-                ...DEFAULT_MARKETING_CHANNELS,
-                reservation?.marketingChannel ?? '',
-              ].filter((channel) => channel.length > 0)
+              [...normalized, reservation?.marketingChannel ?? ''].filter(
+                (channel) => channel.length > 0
+              )
             )
           )
           if (merged.length > 0) {
@@ -338,7 +339,7 @@ export function ReservationDialog({
         marketingChannel: normalized,
       }
     })
-  }, [marketingChannelOptions])
+  }, [marketingChannelOptions, marketingMethods])
 
   useEffect(() => {
     if (!open || !currentStore?.id) return
@@ -507,7 +508,7 @@ export function ReservationDialog({
           name: option.name,
           price: toNumber(option.price, 0),
           duration: toNumber(option.duration, 0),
-          note: option.note ?? option.description ?? '',
+          note: reservationOptionNote(option.note ?? option.description),
           storeShare: toNullableNumber(option.storeShare),
           castShare: toNullableNumber(option.castShare),
         })),
@@ -2409,6 +2410,35 @@ export function ReservationDialog({
                   <CardContent className="space-y-4 text-sm">
                     <div className="grid gap-3 sm:grid-cols-2">
                       <div>
+                        {hotelOptions.length > 0 ? (
+                          <div className="mb-2">
+                            <Label htmlFor="entry-hotel-choice">入室情報の登録ホテル</Label>
+                            <select
+                              id="entry-hotel-choice"
+                              className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+                              disabled={entrySending}
+                              value={
+                                hotelOptions.find(
+                                  (hotel) => hotel.hotelName === formState.hotelName
+                                )?.id ?? ''
+                              }
+                              onChange={(event) => {
+                                const hotelName =
+                                  hotelOptions.find((hotel) => hotel.id === event.target.value)
+                                    ?.hotelName ?? ''
+                                setFormState((prev) => ({ ...prev, hotelName }))
+                                setEntryForm((prev) => ({ ...prev, hotelName }))
+                              }}
+                            >
+                              <option value="">直接入力</option>
+                              {hotelOptions.map((hotel) => (
+                                <option key={hotel.id} value={hotel.id}>
+                                  {hotel.hotelName}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        ) : null}
                         <Label htmlFor="entry-hotel-name">ホテル名</Label>
                         <Input
                           id="entry-hotel-name"

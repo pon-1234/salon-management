@@ -3,6 +3,7 @@
  * @related_to   reservation-dialog.tsx: extracted pure display and normalization helpers
  * @known_issues Larger form-state and UI extraction remains in reservation-dialog.tsx
  */
+import { splitMarketingCatalog } from '@/lib/settings/marketing-catalog'
 import { MARKETING_CHANNELS, PAYMENT_METHODS, type PaymentMethod } from '@/lib/constants'
 import { calculateReservationRevenue } from '@/lib/reservation/revenue'
 
@@ -153,25 +154,12 @@ export function isAcquisitionSiteChannel(channel: string): boolean {
   return ACQUISITION_SITE_CHANNEL_HINTS.some((hint) => lower.includes(hint))
 }
 
-export function partitionMarketingChannels(channels: readonly string[]): {
-  methods: string[]
-  sites: string[]
-} {
-  const methods: string[] = []
-  const sites: string[] = []
-  for (const channel of channels) {
-    const trimmed = channel.trim()
-    if (!trimmed) continue
-    if (isAcquisitionSiteChannel(trimmed)) {
-      sites.push(trimmed)
-    } else {
-      methods.push(trimmed)
-    }
-  }
-  if (!sites.some((site) => site.toLowerCase().includes('heaven') || site.includes('ヘブン'))) {
-    sites.push('Heaven')
-  }
-  return { methods, sites }
+export function partitionMarketingChannels(
+  channels: readonly string[],
+  configuredMethods?: readonly string[]
+): { methods: string[]; sites: string[] } {
+  const catalog = splitMarketingCatalog(channels, configuredMethods)
+  return { methods: catalog.methods, sites: catalog.channels }
 }
 
 export function composeMarketingChannel(method: string, site: string | null | undefined): string {

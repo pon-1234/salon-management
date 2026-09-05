@@ -1260,6 +1260,33 @@ describe('ReservationDialog Edit Mode', () => {
     )
   })
 
+  it('reselects a registered hotel in the entry panel without entering edit mode', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL) => ({
+        ok: true,
+        json: async () =>
+          String(input).includes('/api/settings/hotel')
+            ? { data: [{ id: 'hotel-a', hotelName: '登録ホテルA' }] }
+            : { data: [] },
+      }))
+    )
+    render(
+      <ReservationDialog
+        open
+        onOpenChange={mockOnOpenChange}
+        reservation={mockReservation}
+        onSave={mockOnSave}
+      />
+    )
+    const selector = await screen.findByLabelText('入室情報の登録ホテル')
+    fireEvent.change(selector, { target: { value: 'hotel-a' } })
+    expect(document.getElementById('entry-hotel-name')).toHaveValue('登録ホテルA')
+    expect(
+      within(screen.getByTestId('reservation-primary-summary-grid')).getByLabelText('ホテル名')
+    ).toHaveValue('登録ホテルA')
+  })
+
   it('lets the operator edit visit memo and hotel on the surface and keeps entry info in sync', async () => {
     render(
       <ReservationDialog

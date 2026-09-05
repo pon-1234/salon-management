@@ -10,3 +10,8 @@ export function isVisibleReservationOption(option: { name?: string | null }): bo
   const name = option.name?.trim()
   return !name || !HIDDEN_RESERVATION_OPTION_NAMES.has(name)
 }
+
+export function reservationOptionNote(note: string | null | undefined): string {
+  const text = note?.trim() ?? ''
+  return /^旧システム(?:無料系|有料)オプション\s*#\d+$/.test(text) ? '' : text
+}

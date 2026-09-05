@@ -11,6 +11,7 @@ import { handleApiError } from '@/lib/api/errors'
 import { SuccessResponses } from '@/lib/api/responses'
 
 import { db } from '@/lib/db'
+import { DEFAULT_MARKETING_METHODS } from '@/lib/settings/marketing-catalog'
 import { resolveStoreId, ensureStoreId } from '@/lib/store/server'
 import { shouldUseMockFallbacks } from '@/lib/config/feature-flags'
 import { normalizeOptionalUrl } from '@/lib/settings/store-input'
@@ -53,7 +54,8 @@ const storeSettingsSchema = z
       .refine((value) => value === 0 || value === 10)
       .optional(),
     mediaCommentOverwrite: z.boolean().optional(),
-    marketingChannels: z.array(z.string().trim().min(1)).min(1).optional(),
+    marketingMethods: z.array(z.string().trim().min(1)).optional(),
+    marketingChannels: z.array(z.string().trim().min(1)).optional(),
     pointEarnRate: z.coerce.number().min(0).max(100).optional(),
     pointExpirationMonths: z.coerce.number().min(1).max(36).optional(),
     pointMinUsage: z.coerce.number().min(0).optional(),
@@ -109,10 +111,9 @@ export async function GET(request: NextRequest) {
       welfareExpenseRate: Number(settings.welfareExpenseRate ?? 10),
       creditCardFeeRate: Number(settings.creditCardFeeRate ?? 10) === 0 ? 0 : 10,
       mediaCommentOverwrite: Boolean(settings.mediaCommentOverwrite),
-      marketingChannels:
-        Array.isArray(settings.marketingChannels) && settings.marketingChannels.length > 0
-          ? settings.marketingChannels
-          : DEFAULT_MARKETING_CHANNELS,
+      marketingChannels: Array.isArray(settings.marketingChannels)
+        ? settings.marketingChannels
+        : DEFAULT_MARKETING_CHANNELS,
       pointEarnRate: Number(settings.pointEarnRate ?? 1),
       pointExpirationMonths: Number(settings.pointExpirationMonths ?? 12),
       pointMinUsage: Number(settings.pointMinUsage ?? 100),
@@ -195,6 +196,7 @@ export async function PUT(request: NextRequest) {
           creditCardFeeRate: validatedData.creditCardFeeRate === 0 ? 0 : 10,
           mediaCommentOverwrite: validatedData.mediaCommentOverwrite ?? false,
           marketingChannels: marketingChannels ?? DEFAULT_MARKETING_CHANNELS,
+          marketingMethods: validatedData.marketingMethods ?? [...DEFAULT_MARKETING_METHODS],
           mediaAccounts: (mediaAccounts ?? []) as unknown as Prisma.InputJsonValue,
           pointEarnRate: validatedData.pointEarnRate ?? 1,
           pointExpirationMonths: validatedData.pointExpirationMonths ?? 12,
@@ -208,11 +210,9 @@ export async function PUT(request: NextRequest) {
       welfareExpenseRate: Number(updatedSettings.welfareExpenseRate ?? 10),
       creditCardFeeRate: Number(updatedSettings.creditCardFeeRate ?? 10) === 0 ? 0 : 10,
       mediaCommentOverwrite: Boolean(updatedSettings.mediaCommentOverwrite),
-      marketingChannels:
-        Array.isArray(updatedSettings.marketingChannels) &&
-        updatedSettings.marketingChannels.length > 0
-          ? updatedSettings.marketingChannels
-          : DEFAULT_MARKETING_CHANNELS,
+      marketingChannels: Array.isArray(updatedSettings.marketingChannels)
+        ? updatedSettings.marketingChannels
+        : DEFAULT_MARKETING_CHANNELS,
       pointEarnRate: Number(updatedSettings.pointEarnRate ?? 1),
       pointExpirationMonths: Number(updatedSettings.pointExpirationMonths ?? 12),
       pointMinUsage: Number(updatedSettings.pointMinUsage ?? 100),

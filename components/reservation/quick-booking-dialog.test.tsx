@@ -631,7 +631,7 @@ describe('QuickBookingDialog', () => {
     expect(screen.getByTestId('quick-booking-option-grid')).not.toHaveClass('sm:grid-cols-2')
   })
 
-  it('merges required intake channels with the store-specific list', async () => {
+  it('uses the configured intake methods without silently restoring removed entries', async () => {
     const user = userEvent.setup()
     vi.stubGlobal('fetch', createFetchMock())
     render(dialogElement())
@@ -645,8 +645,9 @@ describe('QuickBookingDialog', () => {
     })
     await user.click(channelSelect)
 
-    expect(await screen.findByRole('option', { name: 'LINE' })).toBeInTheDocument()
-    expect(screen.getByRole('option', { name: 'ショートメール' })).toBeInTheDocument()
+    expect(await screen.findByRole('option', { name: 'WEB' })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: '電話' })).toBeInTheDocument()
+    expect(screen.queryByRole('option', { name: 'LINE' })).not.toBeInTheDocument()
     await user.keyboard('{Escape}')
 
     const siteSelect = screen.getByRole('combobox', { name: '集客チャンネル' })
@@ -656,8 +657,8 @@ describe('QuickBookingDialog', () => {
       releasePointerCapture: () => undefined,
     })
     await user.click(siteSelect)
-    expect(await screen.findByRole('option', { name: 'Heaven' })).toBeInTheDocument()
-    expect(screen.getByRole('option', { name: 'サイト関連' })).toBeInTheDocument()
+    expect(screen.queryByRole('option', { name: 'Heaven' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('option', { name: 'サイト関連' })).not.toBeInTheDocument()
   })
 
   it('posts confirmed status, real option IDs, and no implicit dispatch charge', async () => {
