@@ -1,5 +1,7 @@
 # 2026年9月5日 Notion再修正依頼の検証
 
+この文書は同日の先行作業の記録です。その後のキャスト・出勤表の追加依頼と最終反映結果は [続報](2026-09-05-cast-schedule-recheck.md) を参照してください。
+
 対象は `https://salon.c-platinum.com/admin/` を提供するVPSの `salon-preview-system`。旧本番への切替は対象外。
 
 ## 読み取った依頼
