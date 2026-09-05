@@ -19,6 +19,12 @@ function sanitizeScheduleResponse<T>(value: T): T {
   return sanitizeResponseData(value, SCHEDULE_PRIVATE_CAST_FIELDS)
 }
 
+function scheduleDateBoundary(value: string, endOfDay = false): Date {
+  return /^\d{4}-\d{2}-\d{2}$/.test(value)
+    ? new Date(`${value}T${endOfDay ? '23:59:59.999' : '00:00:00'}+09:00`)
+    : new Date(value)
+}
+
 export async function GET(request: NextRequest) {
   try {
     const storeId = await ensureStoreId(await resolveStoreId(request))
@@ -61,11 +67,11 @@ export async function GET(request: NextRequest) {
 
     if (castId) where.castId = castId
     if (date) {
-      where.date = new Date(date)
+      where.date = { gte: scheduleDateBoundary(date), lte: scheduleDateBoundary(date, true) }
     } else if (startDate && endDate) {
       where.date = {
-        gte: new Date(startDate),
-        lte: new Date(endDate),
+        gte: scheduleDateBoundary(startDate),
+        lte: scheduleDateBoundary(endDate, true),
       }
     }
 

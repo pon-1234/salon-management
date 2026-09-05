@@ -133,6 +133,27 @@ describe('GET /api/cast-schedule', () => {
     })
   })
 
+  it('preserves explicit timestamp bounds used by the reservation timeline', async () => {
+    vi.mocked(db.castSchedule.findMany).mockResolvedValueOnce([])
+    const response = await GET(
+      new NextRequest(
+        'http://localhost:3000/api/cast-schedule?startDate=2026-09-06T15:00:00Z&endDate=2026-09-07T14:59:59.999Z'
+      )
+    )
+    expect(response.status).toBe(200)
+    expect(db.castSchedule.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          cast: { storeId: 'ikebukuro' },
+          date: {
+            gte: new Date('2026-09-06T15:00:00Z'),
+            lte: new Date('2026-09-07T14:59:59.999Z'),
+          },
+        },
+      })
+    )
+  })
+
   it('should filter schedules by specific date', async () => {
     const mockSchedules: any[] = []
 
@@ -147,7 +168,10 @@ describe('GET /api/cast-schedule', () => {
 
     expect(response.status).toBe(200)
     expect(vi.mocked(db.castSchedule.findMany)).toHaveBeenCalledWith({
-      where: { date: new Date('2025-07-15'), cast: { storeId: 'ikebukuro' } },
+      where: {
+        date: { gte: new Date('2025-07-14T15:00:00Z'), lte: new Date('2025-07-15T14:59:59.999Z') },
+        cast: { storeId: 'ikebukuro' },
+      },
       include: { cast: true },
       orderBy: [{ date: 'asc' }, { startTime: 'asc' }],
     })
@@ -173,8 +197,8 @@ describe('GET /api/cast-schedule', () => {
       where: {
         cast: { storeId: 'ikebukuro' },
         date: {
-          gte: new Date('2025-07-14'),
-          lte: new Date('2025-07-16'),
+          gte: new Date('2025-07-13T15:00:00Z'),
+          lte: new Date('2025-07-16T14:59:59.999Z'),
         },
       },
       include: { cast: true },
@@ -203,8 +227,8 @@ describe('GET /api/cast-schedule', () => {
         cast: { storeId: 'ikebukuro' },
         castId: 'cast1',
         date: {
-          gte: new Date('2025-07-14'),
-          lte: new Date('2025-07-16'),
+          gte: new Date('2025-07-13T15:00:00Z'),
+          lte: new Date('2025-07-16T14:59:59.999Z'),
         },
       },
       include: { cast: true },
