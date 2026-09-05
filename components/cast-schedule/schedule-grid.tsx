@@ -70,7 +70,7 @@ export function ScheduleGrid({
     if (!status) {
       return (
         <div
-          className={`group relative h-16 cursor-pointer rounded border p-1 transition-all duration-200 hover:shadow-md ${
+          className={`group relative h-14 cursor-pointer rounded border p-1 transition-all duration-200 hover:shadow-md ${
             isToday ? 'border-blue-200 bg-blue-50' : 'border-gray-200 bg-gray-50 hover:bg-gray-100'
           }`}
           onClick={() => handleCellClick(entry, date)}
@@ -88,7 +88,7 @@ export function ScheduleGrid({
     if (status.type === '休日') {
       return (
         <div
-          className={`group relative h-16 cursor-pointer rounded border p-1 transition-all duration-200 hover:shadow-md ${
+          className={`group relative h-14 cursor-pointer rounded border p-1 transition-all duration-200 hover:shadow-md ${
             isToday ? 'border-red-300 bg-red-50' : 'border-red-200 bg-red-50 hover:border-red-300'
           }`}
           onClick={() => handleCellClick(entry, date)}
@@ -107,7 +107,7 @@ export function ScheduleGrid({
       const isAttentionStatus = status.type === '遅刻' || status.type === '早退'
       return (
         <div
-          className={`group relative h-16 cursor-pointer rounded border p-1 transition-all duration-200 hover:shadow-md ${
+          className={`group relative h-14 cursor-pointer rounded border p-1 transition-all duration-200 hover:shadow-md ${
             isToday
               ? 'border-emerald-300 bg-emerald-50'
               : isAttentionStatus
@@ -148,7 +148,7 @@ export function ScheduleGrid({
 
     return (
       <div
-        className={`group relative h-16 cursor-pointer rounded border p-1 transition-all duration-200 hover:shadow-md ${
+        className={`group relative h-14 cursor-pointer rounded border p-1 transition-all duration-200 hover:shadow-md ${
           isToday ? 'border-blue-200 bg-blue-50' : 'border-gray-200 bg-gray-50 hover:bg-gray-100'
         }`}
         onClick={() => handleCellClick(entry, date)}
@@ -283,7 +283,7 @@ export function ScheduleGrid({
           role="rowgroup"
         >
           <Card className="bg-white shadow-sm">
-            <CardContent className="p-2">
+            <CardContent className="p-1">
               <div
                 className="grid min-w-[1020px] grid-cols-[240px_repeat(7,minmax(100px,1fr))] gap-2"
                 role="row"
@@ -342,7 +342,7 @@ export function ScheduleGrid({
               role="row"
               className="bg-white shadow-sm transition-shadow duration-200 hover:shadow-md"
             >
-              <CardContent className="p-2">
+              <CardContent className="p-1">
                 <div className="grid min-w-[1020px] grid-cols-[240px_repeat(7,minmax(100px,1fr))] items-center gap-2">
                   {/* Cast Info */}
                   <div

@@ -133,6 +133,11 @@ describe('Cast API endpoints', () => {
       expect(response.status).toBe(200)
       expect(Array.isArray(data)).toBe(true)
       expect(data).toHaveLength(2)
+      expect(mockedDb.cast.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          orderBy: [{ nameKana: { sort: 'asc', nulls: 'last' } }, { name: 'asc' }, { id: 'asc' }],
+        })
+      )
       expect(data[0]).toMatchObject({
         id: '1',
         name: 'Test Cast 1',

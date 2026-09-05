@@ -370,7 +370,7 @@ async function fetchCastListWithRelations(
       where: { storeId },
       take: pagination.take,
       skip: pagination.skip,
-      orderBy: [{ nameKana: { sort: 'asc', nulls: 'last' } }, { name: 'asc' }],
+      orderBy: [{ nameKana: { sort: 'asc', nulls: 'last' } }, { name: 'asc' }, { id: 'asc' }],
       select: {
         id: true,
         name: true,
@@ -436,7 +436,7 @@ async function fetchCastListWithRelations(
         where: { storeId },
         take: pagination.take,
         skip: pagination.skip,
-        orderBy: [{ nameKana: { sort: 'asc', nulls: 'last' } }, { name: 'asc' }],
+        orderBy: [{ nameKana: { sort: 'asc', nulls: 'last' } }, { name: 'asc' }, { id: 'asc' }],
       })
     }
     throw error

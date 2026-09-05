@@ -41,7 +41,7 @@ export function CastListView({ casts, view = 'grid' }: CastListViewProps) {
                     <SafeImage
                       src={memberImage}
                       alt={member.name}
-                      className="h-28 w-full object-cover object-top md:h-32"
+                      className="h-24 w-full object-cover object-top"
                     />
                   </Link>
                   <Badge className="absolute right-2 top-2 bg-emerald-600">
@@ -55,8 +55,10 @@ export function CastListView({ casts, view = 'grid' }: CastListViewProps) {
                   >
                     {member.name}
                   </Link>
-                  <p className="truncate text-xs text-gray-500">{member.nameKana}</p>
-                  <div className="mt-1 text-xs">
+                  <p className="truncate text-[11px] leading-[14px] text-gray-500">
+                    {member.nameKana}
+                  </p>
+                  <div className="mt-1 text-[11px] leading-[14px]">
                     <p>
                       {member.age}歳 / {member.height}cm
                     </p>
@@ -66,18 +68,23 @@ export function CastListView({ casts, view = 'grid' }: CastListViewProps) {
                     <p className="truncate">{member.type}</p>
                   </div>
                   {warnings.length > 0 ? (
-                    <div className="mt-2 text-xs text-amber-700" title={warnings.join(' / ')}>
-                      <AlertTriangle className="mr-1 inline h-3 w-3" />
-                      {warnings.map((warning) => (
-                        <span key={warning} className="block">
-                          {warning
-                            .replace('写真付き身分証が未確認です', '身分証 未確認')
-                            .replace('本籍地入り住民票が未確認です', '住民票 未確認')}
-                        </span>
-                      ))}
+                    <div
+                      className="mt-1 flex items-start gap-1 text-[11px] leading-[14px] text-amber-700"
+                      title={warnings.join(' / ')}
+                    >
+                      <AlertTriangle className="h-3 w-3 shrink-0" />
+                      <div>
+                        {warnings.map((warning) => (
+                          <span key={warning} className="block">
+                            {warning
+                              .replace('写真付き身分証が未確認です', '身分証 未確認')
+                              .replace('本籍地入り住民票が未確認です', '住民票 未確認')}
+                          </span>
+                        ))}
+                      </div>
                     </div>
                   ) : null}
-                  <div className="mt-2 flex gap-1">
+                  <div className="mt-1 flex gap-1">
                     {member.phone ? (
                       <Button size="sm" variant="outline" className="h-7 px-2" asChild>
                         <a href={`tel:${member.phone}`} aria-label={`${member.name}へ電話`}>

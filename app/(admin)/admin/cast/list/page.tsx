@@ -125,8 +125,8 @@ export default function CastListPage() {
   return (
     <div className="min-h-screen bg-white">
       <div className="sticky top-0 z-20 bg-white shadow-sm">
-        <CastListViewToggle view={view} onViewChange={setView} />
         <CastListActionButtons
+          viewToggle={<CastListViewToggle view={view} onViewChange={setView} />}
           onRefresh={handleRefresh}
           onFilterCharacter={handleFilterCharacter}
           nameSearch={nameSearch}
@@ -136,7 +136,7 @@ export default function CastListPage() {
         />
       </div>
 
-      <main className="p-4">
+      <main className="p-2">
         {loading ? (
           <TableSkeleton rows={6} columns={4} label="キャスト一覧を読み込んでいます" />
         ) : (

@@ -3,6 +3,7 @@
  * @related_to   CastListPage, CastListView
  * @known_issues None currently
  */
+import type { ReactNode } from 'react'
 import { Button } from '@/components/ui/button'
 import { RefreshCw, PlusCircle } from 'lucide-react'
 import { Input } from '@/components/ui/input'
@@ -16,6 +17,7 @@ import {
 import Link from 'next/link'
 
 interface CastListActionButtonsProps {
+  viewToggle?: ReactNode
   onRefresh: () => void
   onFilterCharacter: (char: string) => void
   nameSearch: string
@@ -25,6 +27,7 @@ interface CastListActionButtonsProps {
 }
 
 export function CastListActionButtons({
+  viewToggle,
   onRefresh,
   onFilterCharacter,
   nameSearch,
@@ -36,6 +39,7 @@ export function CastListActionButtons({
 
   return (
     <div className="flex flex-wrap items-center gap-2 border-b p-2">
+      {viewToggle}
       <div className="flex items-center gap-2">
         <Button onClick={onRefresh} variant="outline" size="sm">
           <RefreshCw className="mr-2 h-4 w-4" />
