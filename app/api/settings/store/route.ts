@@ -30,6 +30,8 @@ const mediaAccountSchema = z.object({
   adminUrl: z.preprocess(normalizeOptionalUrl, z.string().url().optional()),
   loginId: z.string().optional(),
   password: z.string().optional(),
+  isActive: z.boolean().optional(),
+  notes: z.string().max(10000).optional(),
 })
 
 const storeSettingsSchema = z

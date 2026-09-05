@@ -23,8 +23,13 @@ it('projects retired status, private dates and all structured public profile fie
     check_4: '0',
     check_4_day: '2025-02-02',
     p_type: '1#3',
+    p_bust_cup: '5',
+    pref_flg: '2',
+    mail_ad: ' TEST@EXAMPLE.COM ',
     p_type2: '2',
     p_play: '0#2',
+    options: '01#02#01',
+    options_free: '01#02',
     profile_new_1: '料理',
     profile_new_7: '店長の紹介',
     profile_new_8: 'ご挨拶',
@@ -38,6 +43,8 @@ it('projects retired status, private dates and all structured public profile fie
     photoIdVerifiedAt: new Date('2025-02-01T00:00:00Z'),
     residenceCertificateVerifiedAt: null,
     publicProfile: {
+      bustCup: 'E',
+      birthplace: '関東地方',
       bodyType: ['スレンダー', 'グラマー'],
       personality: ['清楚なお姉さん'],
       availableServices: ['睾丸マッサージ', 'オイルマッサージ'],
@@ -48,6 +55,13 @@ it('projects retired status, private dates and all structured public profile fie
     },
   })
   expect(cast.birthDate).toEqual(new Date('1980-02-29T00:00:00Z'))
+  expect(cast.loginEmail).toBe('test@example.com')
+  expect(cast.availableOptions).toEqual([
+    'legacy-option-free-1',
+    'legacy-option-free-2',
+    'legacy-option-paid-1',
+    'legacy-option-paid-2',
+  ])
   expect(() => projectLegacyCastProfile({ girl_no: '1', shop_no: '999', lev: '2' })).toThrow()
   expect(
     projectLegacyCastProfile({ girl_no: '1', shop_no: '5600', lev: '2', birth: '0000-00-00' })
@@ -81,6 +95,8 @@ it('projects media credentials separately from cast identities and rejects unsaf
       media_name: '採用媒体',
       media_id: 'login',
       media_pw: 'secret',
+      lev: 0,
+      memo: '掲載見送り',
       media_url: 'https://example.com/admin',
       display_url: 'javascript:alert(1)',
     })
@@ -92,5 +108,7 @@ it('projects media credentials separately from cast identities and rejects unsaf
     password: 'secret',
     adminUrl: 'https://example.com/admin',
     publicUrl: '',
+    isActive: false,
+    notes: '掲載見送り',
   })
 })

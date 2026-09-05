@@ -67,7 +67,7 @@ export async function getPublicCastProfiles(storeId: string): Promise<PublicCast
   let castRecords: CastRecord[]
   try {
     castRecords = await db.cast.findMany({
-      where: { storeId },
+      where: { storeId, employmentStatus: 'active' },
       select: {
         id: true,
         name: true,
@@ -188,7 +188,7 @@ export async function getPublicRankingData(storeId: string): Promise<PublicRanki
       }),
       db.reservation.groupBy({
         by: ['castId'],
-        where: { storeId },
+        where: { storeId, cast: { employmentStatus: 'active' } },
         _count: { _all: true },
       }),
     ])
@@ -353,7 +353,7 @@ export async function getPublicCastDetail(
   castId: string
 ): Promise<PublicCastDetail | null> {
   const record = await db.cast.findFirst({
-    where: { id: castId, storeId },
+    where: { id: castId, storeId, employmentStatus: 'active' },
     select: {
       id: true,
       name: true,

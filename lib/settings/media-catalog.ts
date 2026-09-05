@@ -14,16 +14,26 @@ export interface MediaAccountInput {
   adminUrl?: string
   loginId?: string
   password?: string
+  isActive?: boolean
+  notes?: string
 }
 
 export function mergeMediaNamesIntoMarketingCatalog(
   channels: string[],
-  accounts: Array<Pick<MediaAccountInput, 'id' | 'name' | 'category'>>
+  accounts: Array<Pick<MediaAccountInput, 'id' | 'name' | 'category' | 'isActive'>>
 ): string[] {
+  const paused = new Set(
+    accounts.filter((account) => account.isActive === false).map((account) => account.name.trim())
+  )
+  const active = new Set(
+    accounts
+      .filter((account) => account.category === 'sales' && account.isActive !== false)
+      .map((account) => account.name.trim())
+  )
   return Array.from(
     new Set([
-      ...channels,
-      ...accounts.filter(({ category }) => category === 'sales').map(({ name }) => name.trim()),
+      ...channels.filter((channel) => !paused.has(channel) || active.has(channel)),
+      ...active,
     ])
   ).filter(Boolean)
 }

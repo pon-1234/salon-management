@@ -31,6 +31,8 @@ it('shows media as a searchable list and opens credentials only for the selected
               publicUrl: 'https://example.com',
               loginId: 'user',
               password: '',
+              isActive: false,
+              notes: '掲載見送り',
             },
             { id: 'site-b', name: '求人サイト', category: 'recruitment' },
           ],
@@ -39,14 +41,16 @@ it('shows media as a searchable list and opens credentials only for the selected
     }))
   )
   render(<MediaInfoPage />)
-  await screen.findByText('駅ちか')
+  await screen.findByText('駅ちか（保留中）')
   expect(screen.queryByLabelText('ログインID')).not.toBeInTheDocument()
   expect(screen.queryByText('電話')).not.toBeInTheDocument()
   expect(screen.queryByText('未登録の媒体')).not.toBeInTheDocument()
   fireEvent.click(screen.getByRole('button', { name: '駅ちかを編集する' }))
   expect(screen.getByLabelText('ログインID')).toHaveValue('user')
+  expect(screen.getByLabelText('掲載中')).not.toBeChecked()
+  expect(screen.getByLabelText('備考')).toHaveValue('掲載見送り')
   fireEvent.change(screen.getByLabelText('媒体を検索'), { target: { value: '求人' } })
-  expect(screen.queryByText('駅ちか')).not.toBeInTheDocument()
+  expect(screen.queryByText('駅ちか（保留中）')).not.toBeInTheDocument()
   expect(screen.getByText('求人サイト')).toBeInTheDocument()
 })
 

@@ -140,7 +140,7 @@ async function fetchStoreScheduleDays(
 
   const schedules = await db.castSchedule.findMany({
     where: {
-      cast: { storeId },
+      cast: { storeId, employmentStatus: 'active' },
       date: {
         gte: start,
         lt: end,

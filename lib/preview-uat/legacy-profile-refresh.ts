@@ -5,6 +5,7 @@
  */
 import type { PublicProfile } from '@/lib/cast/types'
 import type { MediaAccountInput } from '@/lib/settings/media-catalog'
+import { z } from 'zod'
 
 type LegacyRow = Record<string, string | number | null>
 const text = (row: LegacyRow, key: string) => String(row[key] ?? '').trim()
@@ -54,7 +55,8 @@ export function projectLegacyCastProfile(row: LegacyRow) {
   )
     throw new Error('Invalid scoped legacy cast')
   const publicProfile: PublicProfile = {
-    bustCup: text(row, 'p_bust_cup'),
+    bustCup:
+      ['', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K'][Number(row.p_bust_cup)] ?? '',
     bodyType: labels(text(row, 'p_type'), bodyTypes, 1),
     personality: labels(text(row, 'p_type2'), personalities, 1),
     availableServices: labels(text(row, 'p_play'), services),
@@ -64,7 +66,17 @@ export function projectLegacyCastProfile(row: LegacyRow) {
     homeVisit: Number(row.home_flg) === 1 ? 'OK' : 'NG',
     tattoo: Number(row.tattoo_flg) === 1 ? 'ある' : 'なし',
     bloodType: (['A', 'B', 'O', 'AB', '秘密'] as const)[Number(row.blood_flg)] ?? '秘密',
-    birthplace: '',
+    birthplace:
+      [
+        '出身地ナイショ',
+        '北海道・東北地方',
+        '関東地方',
+        '中部地方',
+        '関西地方',
+        '中国地方',
+        '四国地方',
+        '九州地方',
+      ][Number(row.pref_flg)] ?? '',
     foreignerOk: Number(row.foreigner_flg) === 1 ? 'OK' : 'NG',
     hobbies: text(row, 'profile_new_1'),
     charmPoint: text(row, 'profile_new_2'),
@@ -79,11 +91,11 @@ export function projectLegacyCastProfile(row: LegacyRow) {
     ...text(row, 'options_free')
       .split('#')
       .filter((id) => /^\d+$/.test(id))
-      .map((id) => `legacy-option-free-${id}`),
+      .map((id) => `legacy-option-free-${Number(id)}`),
     ...text(row, 'options')
       .split('#')
       .filter((id) => /^\d+$/.test(id))
-      .map((id) => `legacy-option-paid-${id}`),
+      .map((id) => `legacy-option-paid-${Number(id)}`),
   ]
   return {
     id: `legacy-cast-${row.girl_no}`,
@@ -100,6 +112,9 @@ export function projectLegacyCastProfile(row: LegacyRow) {
     employmentStatus: Number(row.lev) === 3 ? 'retired' : 'active',
     netReservation: Number(row.lev) !== 3,
     phone: text(row, 'tel') || null,
+    loginEmail: z.string().email().safeParse(text(row, 'mail_ad').toLowerCase()).success
+      ? text(row, 'mail_ad').toLowerCase()
+      : null,
     birthDate: date(text(row, 'birth')),
     joinedAt: date(text(row, 'regist_date')),
     retiredAt: date(text(row, 'quit_day')),
@@ -110,7 +125,7 @@ export function projectLegacyCastProfile(row: LegacyRow) {
     photoIdVerifiedAt: Number(row.check_3) === 1 ? date(text(row, 'check_3_day')) : null,
     residenceCertificateVerifiedAt:
       Number(row.check_4) === 1 ? date(text(row, 'check_4_day')) : null,
-    availableOptions,
+    availableOptions: [...new Set(availableOptions)],
   }
 }
 
@@ -168,5 +183,7 @@ export function projectLegacyMedia(row: LegacyRow): MediaAccountInput {
     adminUrl: httpUrl(text(row, 'media_url')),
     loginId: text(row, 'media_id'),
     password: text(row, 'media_pw'),
+    isActive: Number(row.lev) === 1,
+    notes: text(row, 'memo'),
   }
 }

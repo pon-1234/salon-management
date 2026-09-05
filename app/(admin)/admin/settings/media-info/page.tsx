@@ -11,6 +11,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import {
   Select,
@@ -200,6 +201,7 @@ export default function MediaInfoPage() {
                   <div className="min-w-0">
                     <CardTitle className="truncate text-sm">
                       {account.name || '新しい媒体'}
+                      {account.isActive === false ? '（保留中）' : ''}
                     </CardTitle>
                     <p className="text-xs text-muted-foreground">
                       {CATEGORY_LABELS[account.category]}
@@ -272,6 +274,27 @@ export default function MediaInfoPage() {
                 </CardHeader>
                 {editingId === account.id ? (
                   <CardContent className="grid gap-4 md:grid-cols-2">
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        aria-label="掲載中"
+                        checked={account.isActive !== false}
+                        onChange={(event) =>
+                          updateAccount(account.id, { isActive: event.target.checked })
+                        }
+                      />
+                      掲載中
+                    </label>
+                    <div className="space-y-2">
+                      <Label htmlFor={`media-notes-${account.id}`}>備考</Label>
+                      <Textarea
+                        id={`media-notes-${account.id}`}
+                        value={account.notes ?? ''}
+                        onChange={(event) =>
+                          updateAccount(account.id, { notes: event.target.value })
+                        }
+                      />
+                    </div>
                     <div className="space-y-2">
                       <Label>種別</Label>
                       <Select

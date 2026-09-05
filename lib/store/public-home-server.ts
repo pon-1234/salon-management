@@ -139,7 +139,11 @@ export async function loadPublicStoreHomeData(slug: string): Promise<PublicStore
     }
 
     const rankingCastsRaw = await db.cast.findMany({
-      where: { storeId: storeRecord.id, panelDesignationRank: { gt: 0 } },
+      where: {
+        storeId: storeRecord.id,
+        employmentStatus: 'active',
+        panelDesignationRank: { gt: 0 },
+      },
       orderBy: [
         { panelDesignationRank: 'asc' },
         { regularDesignationRank: 'asc' },
@@ -149,7 +153,7 @@ export async function loadPublicStoreHomeData(slug: string): Promise<PublicStore
     })
 
     const newcomersRaw = await db.cast.findMany({
-      where: { storeId: storeRecord.id },
+      where: { storeId: storeRecord.id, employmentStatus: 'active' },
       orderBy: [{ createdAt: 'desc' }],
       take: 8,
     })
@@ -160,7 +164,7 @@ export async function loadPublicStoreHomeData(slug: string): Promise<PublicStore
 
     let todaysSchedulesRaw = await db.castSchedule.findMany({
       where: {
-        cast: { storeId: storeRecord.id },
+        cast: { storeId: storeRecord.id, employmentStatus: 'active' },
         startTime: {
           gte: start,
           lte: end,
@@ -177,7 +181,7 @@ export async function loadPublicStoreHomeData(slug: string): Promise<PublicStore
     if (todaysSchedulesRaw.length === 0) {
       todaysSchedulesRaw = await db.castSchedule.findMany({
         where: {
-          cast: { storeId: storeRecord.id },
+          cast: { storeId: storeRecord.id, employmentStatus: 'active' },
           startTime: {
             gte: addHours(now, -3),
           },
@@ -196,6 +200,7 @@ export async function loadPublicStoreHomeData(slug: string): Promise<PublicStore
         status: 'published',
         cast: {
           storeId: storeRecord.id,
+          employmentStatus: 'active',
         },
       },
       include: {

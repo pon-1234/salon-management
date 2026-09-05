@@ -58,6 +58,13 @@ describe('getStoreScheduleDays', () => {
     ])
     expect(JSON.stringify(days)).not.toContain('reservation-secret')
     expect(JSON.stringify(days)).not.toContain('confirmed')
+    expect(mocks.castScheduleFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          cast: { storeId: 'store-a', employmentStatus: 'active' },
+        }),
+      })
+    )
     expect(mocks.reservationFindMany).toHaveBeenCalledWith(
       expect.objectContaining({
         select: {

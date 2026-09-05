@@ -80,6 +80,7 @@ describe('GET /api/public/stores/[slug]', () => {
         status: 'published',
         cast: {
           storeId: 'store-1',
+          employmentStatus: 'active',
         },
       },
       include: {
@@ -94,6 +95,12 @@ describe('GET /api/public/stores/[slug]', () => {
     expect(db.store.findFirst).toHaveBeenCalledWith(
       expect.objectContaining({ where: { slug: 'test-store', isActive: true } })
     )
+    for (const [args] of vi.mocked(db.cast.findMany).mock.calls) {
+      expect(args?.where).toMatchObject({ employmentStatus: 'active' })
+    }
+    for (const [args] of vi.mocked(db.castSchedule.findMany).mock.calls) {
+      expect(args?.where?.cast).toMatchObject({ employmentStatus: 'active' })
+    }
   })
 
   it('uses the same database payload for the route and Server Component data without self-fetching', async () => {

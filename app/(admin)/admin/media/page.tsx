@@ -75,7 +75,10 @@ export default function MediaPage() {
                   sectionAccounts.map((account) => (
                     <Card key={account.id}>
                       <CardHeader className="pb-3">
-                        <CardTitle className="text-base">{account.name}</CardTitle>
+                        <CardTitle className="text-base">
+                          {account.name}
+                          {account.isActive === false ? '（保留中）' : ''}
+                        </CardTitle>
                       </CardHeader>
                       <CardContent className="space-y-3 text-sm">
                         {account.loginId ? (

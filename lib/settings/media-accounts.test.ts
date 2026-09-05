@@ -39,9 +39,19 @@ describe('media accounts', () => {
         [
           { id: 'a', name: 'Heaven', category: 'sales' },
           { id: 'b', name: '求人サイト', category: 'recruitment' },
+          { id: 'c', name: '保留媒体', category: 'sales', isActive: false },
         ]
       )
     ).toEqual(['電話', 'Heaven'])
+  })
+
+  it('removes a paused media from current channels while retaining unrelated methods', () => {
+    expect(
+      mergeMediaNamesIntoMarketingCatalog(
+        ['電話', '保留媒体'],
+        [{ id: 'c', name: '保留媒体', category: 'sales', isActive: false }]
+      )
+    ).toEqual(['電話'])
   })
 
   it('imports current marketing channels without duplicating saved media', () => {

@@ -368,6 +368,40 @@ describe('settings route authorization', () => {
     expect((await write.json()).data.marketingChannels).toEqual([])
   })
 
+  it('preserves imported media publication state and notes on save', async () => {
+    mocks.requireAdmin.mockResolvedValue(null)
+    mocks.storeSettingsFindUnique.mockResolvedValue({
+      id: 'settings-a',
+      storeId: 'store-a',
+      marketingChannels: ['電話', '保留媒体'],
+    })
+    mocks.storeSettingsUpdate.mockImplementation(async ({ data }) => ({
+      id: 'settings-a',
+      ...data,
+    }))
+    const response = await updateStore(
+      jsonRequest('/api/settings/store?storeId=store-a', {
+        mediaAccounts: [
+          {
+            id: 'legacy-media-1',
+            name: '保留媒体',
+            category: 'sales',
+            isActive: false,
+            notes: '掲載見送り',
+          },
+        ],
+      })
+    )
+    expect(response.status).toBe(200)
+    expect((await response.json()).data.mediaAccounts[0]).toMatchObject({
+      isActive: false,
+      notes: '掲載見送り',
+    })
+    expect(mocks.storeSettingsUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ marketingChannels: ['電話'] }) })
+    )
+  })
+
   it('keeps configured methods when creating the first store settings', async () => {
     mocks.requireAdmin.mockResolvedValue(null)
     mocks.storeSettingsFindUnique.mockResolvedValue(null)

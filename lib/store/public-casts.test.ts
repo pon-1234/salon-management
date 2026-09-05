@@ -18,6 +18,20 @@ vi.mock('@/lib/db', () => ({
 import { getPublicCastDetail, getPublicCastProfiles } from './public-casts'
 
 describe('getPublicCastProfiles', () => {
+  it('limits public lists and direct detail lookup to active casts', async () => {
+    mocks.castFindMany.mockResolvedValue([])
+    await getPublicCastProfiles('store-a')
+    expect(mocks.castFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { storeId: 'store-a', employmentStatus: 'active' } })
+    )
+    mocks.castFindFirst.mockResolvedValue(null)
+    await expect(getPublicCastDetail('store-a', 'retired-cast')).resolves.toBeNull()
+    expect(mocks.castFindFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'retired-cast', storeId: 'store-a', employmentStatus: 'active' },
+      })
+    )
+  })
   it('fails closed to an empty public list when the database is unavailable', async () => {
     mocks.castFindMany.mockRejectedValueOnce(new Error('database unavailable'))
 
@@ -119,7 +133,7 @@ describe('getPublicCastDetail', () => {
     expect(serialized).not.toContain('option-internal')
     expect(mocks.castFindFirst).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { id: 'cast-1', storeId: 'ginza' },
+        where: { id: 'cast-1', storeId: 'ginza', employmentStatus: 'active' },
         select: expect.objectContaining({
           id: true,
           name: true,

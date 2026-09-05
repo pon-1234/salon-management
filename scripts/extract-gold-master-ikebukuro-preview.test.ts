@@ -21,6 +21,7 @@ describe('gold master Ikebukuro preview extractor', () => {
 
   it('supports a scoped profile refresh including retired casts without exporting cast authentication secrets', () => {
     expect(source).toContain("'cast-profiles'")
+    expect(source).toContain('g.mail_ad, g.pref_flg')
     expect(source).toContain('g.lev IN (2, 3)')
     expect(source).toContain('g.check_3_day')
     expect(source).toContain('m.media_name')
