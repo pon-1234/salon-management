@@ -146,4 +146,73 @@ describe('CastForm pricing scope', () => {
     fireEvent.click(screen.getByLabelText('本指名手取UP'))
     expect(await screen.findByRole('option', { name: '本指名UP B（2,000円）' })).toBeInTheDocument()
   })
+  it('creates an incomplete new cast as provisional by default', async () => {
+    const onSubmit = vi.fn()
+    render(
+      <CastForm storeId="uat-ikebukuro" cast={null} onSubmit={onSubmit} isSubmitting={false} />
+    )
+    expect(screen.getByRole('combobox', { name: '在籍ステータス' })).toHaveTextContent('仮登録')
+    fireEvent.change(screen.getByRole('textbox', { name: /^源氏名$/ }), {
+      target: { value: '確認' },
+    })
+    fireEvent.change(screen.getByRole('textbox', { name: '本名（ひらがな）' }), {
+      target: { value: 'かくにん' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: '保存' }))
+    await waitFor(() =>
+      expect(onSubmit).toHaveBeenCalledWith(
+        expect.objectContaining({ employmentStatus: 'provisional' })
+      )
+    )
+  })
+  it('retains partial birthday selections and saves the resulting age and onboarding dates', async () => {
+    const onSubmit = vi.fn()
+    render(
+      <CastForm storeId="uat-ikebukuro" cast={null} onSubmit={onSubmit} isSubmitting={false} />
+    )
+    fireEvent.change(screen.getByRole('textbox', { name: /^源氏名$/ }), {
+      target: { value: '確認' },
+    })
+    fireEvent.change(screen.getByRole('textbox', { name: '本名（ひらがな）' }), {
+      target: { value: 'かくにん' },
+    })
+    for (const [part, value] of [
+      ['年', '1999'],
+      ['月', '12'],
+      ['日', '31'],
+    ]) {
+      fireEvent.click(screen.getByRole('combobox', { name: `生年月日${part}` }))
+      fireEvent.click(await screen.findByRole('option', { name: value }))
+      expect(screen.getByRole('combobox', { name: `生年月日${part}` })).toHaveTextContent(value)
+      if (part === '年') {
+        fireEvent.click(screen.getByRole('button', { name: '保存' }))
+        expect(await screen.findByRole('alert')).toHaveTextContent(
+          '生年月日を正しく選択してください'
+        )
+        expect(onSubmit).not.toHaveBeenCalled()
+      }
+    }
+    fireEvent.change(screen.getByLabelText('入店日'), { target: { value: '2026-09-05' } })
+    fireEvent.change(screen.getByLabelText('写真付き身分証確認日'), {
+      target: { value: '2026-09-05' },
+    })
+    fireEvent.change(screen.getByLabelText('本籍地入り住民票確認日'), {
+      target: { value: '2026-09-05' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: '保存' }))
+    const today = new Date()
+    const age =
+      today.getFullYear() - 1999 - (today.getMonth() === 11 && today.getDate() === 31 ? 0 : 1)
+    await waitFor(() =>
+      expect(onSubmit).toHaveBeenCalledWith(
+        expect.objectContaining({
+          birthDate: '1999-12-31',
+          age,
+          joinedAt: '2026-09-05',
+          photoIdVerifiedAt: '2026-09-05',
+          residenceCertificateVerifiedAt: '2026-09-05',
+        })
+      )
+    )
+  })
 })

@@ -3,12 +3,13 @@
 /**
  * @design_doc   Cast profile editing and secure account-boundary form
  * @related_to   CastManagePage; CastLineRegistrationPanel owns LINE account linking
- * @known_issues Additional private profile fields require an explicit persistence design
+ * @known_issues None
  */
 import React, { useEffect, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { Cast } from '@/lib/cast/types'
+import { calculateAge } from '@/lib/customer/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -105,7 +106,7 @@ const buildInitialFormState = (cast?: Cast | null) => ({
   panelDesignationRank: cast?.panelDesignationRank ?? '',
   regularDesignationRank: cast?.regularDesignationRank ?? '',
   workStatus: cast?.workStatus || '出勤',
-  employmentStatus: cast?.employmentStatus || 'active',
+  employmentStatus: cast?.employmentStatus || 'provisional',
   phone: cast?.phone ?? '',
   birthDate: cast?.birthDate ? new Date(cast.birthDate).toISOString().slice(0, 10) : '',
   blogWidget: cast?.blogWidget ?? '',
@@ -160,6 +161,14 @@ export function CastForm({
   isSubmitting = false,
 }: CastFormProps) {
   const [formData, setFormData] = useState(() => buildInitialFormState(cast))
+  const [birthDateError, setBirthDateError] = useState(false)
+  const birthDateValue = new Date(`${formData.birthDate}T00:00:00`)
+  const birthDateValid =
+    /^\d{4}-\d{2}-\d{2}$/.test(formData.birthDate) &&
+    Number.isFinite(birthDateValue.getTime()) &&
+    birthDateValue.getFullYear() === Number(formData.birthDate.slice(0, 4)) &&
+    birthDateValue.getMonth() + 1 === Number(formData.birthDate.slice(5, 7)) &&
+    birthDateValue.getDate() === Number(formData.birthDate.slice(8, 10))
   const [designationFees, setDesignationFees] = useState<DesignationFee[]>([])
   const initialFormData = useMemo(() => buildInitialFormState(cast), [cast])
   const [showLoginPassword, setShowLoginPassword] = useState(false)
@@ -286,6 +295,11 @@ export function CastForm({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     clearErrors()
+    setBirthDateError(false)
+    if (formData.birthDate && !birthDateValid) {
+      setBirthDateError(true)
+      return
+    }
 
     const validation = validateCastFormInput({
       name: formData.name,
@@ -387,7 +401,7 @@ export function CastForm({
       }
     }
 
-    const age = toOptionalNumber(formData.age)
+    const age = birthDateValid ? calculateAge(birthDateValue) : toOptionalNumber(formData.age)
     if (age !== undefined) payload.age = age
 
     const height = toOptionalNumber(formData.height)
@@ -527,12 +541,10 @@ export function CastForm({
                     value={value}
                     onValueChange={(nextValue) => {
                       const next = { year, month, day, [part]: nextValue }
+                      setBirthDateError(false)
                       setFormData((previous) => ({
                         ...previous,
-                        birthDate:
-                          next.year && next.month && next.day
-                            ? `${next.year}-${next.month}-${next.day}`
-                            : '',
+                        birthDate: `${next.year}-${next.month}-${next.day}`,
                       }))
                     }}
                   >
@@ -554,10 +566,14 @@ export function CastForm({
                 )
               })}
             </div>
-            {formData.birthDate ? (
+            {birthDateError && (
+              <p role="alert" className="text-sm text-destructive">
+                生年月日を正しく選択してください
+              </p>
+            )}
+            {birthDateValid ? (
               <p className="text-xs text-muted-foreground">
-                年齢:{' '}
-                {Math.max(0, new Date().getFullYear() - Number(formData.birthDate.slice(0, 4)))}歳
+                年齢: {calculateAge(birthDateValue)}歳
               </p>
             ) : null}
           </div>
